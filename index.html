@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STAR ACADEMY // Cybernetic STEM Portal</title>
+  <meta name="description" content="A unified, high-fidelity STEM educational platform combining study notes, interactive math/physics sandboxes, multi-variant written exams, and dynamic gamified flight simulations.">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <!-- Ambient Space / Grid Layout -->
+  <div class="stars-bg"></div>
+  <div class="grid-bg"></div>
+  
+  <div id="app-wrapper">
+    <!-- TOP NAVIGATION BAR -->
+    <header class="main-header glass-panel">
+      <div class="logo-area">
+        <svg viewBox="0 0 100 100" width="36" height="36" class="logo-icon">
+          <polygon points="50,5 64,36 98,36 70,57 81,91 50,70 19,91 30,57 2,36 36,36" fill="#00f3ff" filter="drop-shadow(0 0 8px rgba(0, 243, 255, 0.6))" />
+        </svg>
+        <span class="logo-text">STAR <span class="highlight">ACADEMY</span></span>
+      </div>
+
+      <nav class="navigation-tabs">
+        <!-- Student Tabs -->
+        <button class="tab-btn active student-only" data-tab="hangar">КАБИНЕТ</button>
+        <button class="tab-btn student-only" data-tab="study">ОБУЧЕНИЕ</button>
+        <button class="tab-btn student-only" data-tab="simulator">СИМУЛЯТОР</button>
+        <button class="tab-btn student-only" data-tab="gradebook">УСПЕВАЕМОСТЬ</button>
+
+        <!-- Teacher Tabs -->
+        <button class="tab-btn teacher-only hidden" data-tab="teacher-hangar">КОНСОЛЬ</button>
+        <button class="tab-btn teacher-only hidden" data-tab="teacher-gradebook">УЧЕНИКИ</button>
+        <button class="tab-btn teacher-only hidden" data-tab="teacher-constructor">КОНСТРУКТОР</button>
+
+        <!-- Parent Tabs -->
+        <button class="tab-btn parent-only hidden" data-tab="parent-hangar">КАБИНЕТ</button>
+        <button class="tab-btn parent-only hidden" data-tab="parent-monitoring">МОНИТОРИНГ</button>
+      </nav>
+
+      <div style="display:flex; align-items:center; gap:15px; margin-left:auto;">
+        <div class="user-role-badge">
+          <span id="badge-rank-text" class="role-icon">🎖</span>
+          <span id="header-role-text" class="text-glow-cyan">КУРСАНТ // УР. 1</span>
+        </div>
+        <div id="header-user-name" class="text-glow-pink" style="font-size:0.8rem; font-weight:bold; display:none;">Гость</div>
+        <button id="btn-logout" class="btn secondary-btn" style="padding:4px 8px; font-size:0.75rem; border-color:var(--color-pink); color:var(--color-pink); display:none;">ВЫХОД</button>
+      </div>
+    </header>
+
+    <!-- CONTENT VIEWPORTS -->
+    <main id="portal-viewport">
+      
+      <!-- 1. HANGAR TAB (USER CABINET, SHOP, XP & LEADERBOARD) -->
+      <section id="tab-hangar" class="tab-view active">
+        <div class="hangar-grid-upgraded">
+          
+          <!-- Column 1: Profile & Customization Shop -->
+          <div class="hangar-left-col">
+            <!-- Upgraded Profile Card -->
+            <div class="glass-panel profile-card-upgraded">
+              <div class="card-header-line">
+                <h2 class="text-glow-cyan">ЛИЧНЫЙ ПРОФИЛЬ</h2>
+                <span id="profile-rank-badge" class="status-indicator">ЗВАНИЕ: КУРСАНТ</span>
+              </div>
+              
+              <div class="profile-meta">
+                <div class="avatar-glow" id="profile-avatar-glow">
+                  <span id="profile-avatar-emoji">🎓</span>
+                </div>
+                <div class="profile-details-upgraded">
+                  <h3 id="profile-name">Пилот Академии</h3>
+                  <div class="xp-container">
+                    <div class="xp-labels">
+                      <span id="lbl-rank-title">ЗВЕЗДНЫЙ КУРСАНТ</span>
+                      <span id="lbl-xp-val">0 / 100 XP</span>
+                    </div>
+                    <div class="xp-progress-bar"><div class="fill" id="xp-fill-bar" style="width: 0%"></div></div>
+                  </div>
+                  <div class="shards-bank">
+                    <svg viewBox="0 0 24 24" width="18" height="18" class="icon-shard">
+                      <polygon points="12,2 22,12 12,22 2,12" fill="#ff007f" />
+                    </svg>
+                    <span id="profile-shards" class="text-glow-pink">0</span> Космо-Шардов
+                  </div>
+                </div>
+              </div>
+
+              <!-- Role Selector removed — role is determined by login registration -->
+            </div>
+
+            <!-- New Customization Space Shop (Hangar Shop) -->
+            <div class="glass-panel customization-shop">
+              <h3 class="text-glow-pink">КАСТОМИЗАЦИЯ КОРАБЛЯ</h3>
+              <p class="desc-shop">Купите скины пламени двигателя и анимации силового щита за заработанные Шарды!</p>
+              
+              <div class="shop-items-scroller">
+                <!-- Shop Item 1 -->
+                <div class="shop-item-card" data-shop-item="flame_pink">
+                  <div class="item-header">
+                    <h4>РОЗОВОЕ ПЛАМЯ</h4>
+                    <span class="status-bought" id="sh-status-flame_pink">КУПЛЕНО</span>
+                  </div>
+                  <p class="item-desc">Розовый неоновый выхлоп плазмы реактивных двигателей.</p>
+                  <button class="btn item-action-btn select-btn" id="sh-btn-flame_pink">ВЫБРАТЬ</button>
+                </div>
+
+                <!-- Shop Item 2 -->
+                <div class="shop-item-card" data-shop-item="flame_green">
+                  <div class="item-header">
+                    <h4>ИЗУМРУДНЫЙ ЛУЧ</h4>
+                    <span class="status-bought" id="sh-status-flame_green">15 ШАРДОВ</span>
+                  </div>
+                  <p class="item-desc">Кислотно-зеленый выхлоп плазмы с высокой температурой.</p>
+                  <button class="btn item-action-btn buy-btn" id="sh-btn-flame_green">КУПИТЬ</button>
+                </div>
+
+                <!-- Shop Item 3 -->
+                <div class="shop-item-card" data-shop-item="flame_gold">
+                  <div class="item-header">
+                    <h4>ЗОЛОТОЕ СИЯНИЕ</h4>
+                    <span class="status-bought" id="sh-status-flame_gold">30 ШАРДОВ</span>
+                  </div>
+                  <p class="item-desc">Имперский золотой энергетический шлейф реакторов.</p>
+                  <button class="btn item-action-btn buy-btn" id="sh-btn-flame_gold">КУПИТЬ</button>
+                </div>
+
+                <!-- Shop Item 4 -->
+                <div class="shop-item-card" data-shop-item="shield_hex">
+                  <div class="item-header">
+                    <h4>СОТОВЫЙ ЩИТ</h4>
+                    <span class="status-bought" id="sh-status-shield_hex">25 ШАРДОВ</span>
+                  </div>
+                  <p class="item-desc">Силовой щит в виде объемной гексагональной сетки.</p>
+                  <button class="btn item-action-btn buy-btn" id="sh-btn-shield_hex">КУПИТЬ</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Simulated Leaderboard & Teacher/Parent tools -->
+          <div class="hangar-right-col">
+            <!-- Simulated Leaderboard (Interactive Gamification) -->
+            <div class="glass-panel leaderboard-card">
+              <h3 class="text-glow-cyan">ГАЛАКТИЧЕСКАЯ ТАБЛИЦА ЛИДЕРОВ</h3>
+              <p class="desc-text">Сдавайте тесты, решайте уравнения в полете и обгоняйте лучших курсантов!</p>
+              
+              <div class="leaderboard-container">
+                <div class="leaderboard-header-row">
+                  <span>МЕСТО</span>
+                  <span>КУРСАНТ</span>
+                  <span>УРОВЕНЬ</span>
+                  <span>XP ОПЫТ</span>
+                </div>
+                <div class="leaderboard-list" id="leaderboard-entries">
+                  <!-- Entries will be loaded here, highlighting the player! -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Role Tools Box -->
+            <div class="glass-panel dynamic-role-panel">
+              <!-- Student View Feature -->
+              <div id="feature-student" class="role-feature-view">
+                <h3 class="text-glow-pink">ЛИЧНЫЙ КАБИНЕТ КУРСАНТА</h3>
+                <div class="student-cabin-layout" style="display:flex; flex-direction:column; gap:15px; margin-top:10px;">
+                  
+                  <!-- Enroll in Course -->
+                  <div class="enrollment-join-box" style="background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+                    <h4 style="margin-bottom:8px; font-size:0.85rem; color:#fff;">ПОДКЛЮЧИТЬСЯ К УЧЕБНОЙ ГРУППЕ:</h4>
+                    <div class="input-row" style="display:flex; gap:10px;">
+                      <input type="text" id="student-join-course-code" placeholder="КОД КУРСА (напр. BXY682)" style="flex:1; padding:8px; font-size:0.8rem; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff;">
+                      <button class="btn primary-btn" id="btn-student-join-course" style="padding:6px 15px; font-size:0.8rem;">ВСТУПИТЬ</button>
+                    </div>
+                  </div>
+
+                  <!-- My enrolled courses list -->
+                  <div class="student-courses-box">
+                    <h4 style="font-size:0.85rem; margin-bottom:8px; color:#00f3ff;">МОИ ПОДКЛЮЧЕННЫЕ КУРСЫ:</h4>
+                    <ul id="student-courses-ul" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:8px; font-size:0.8rem;">
+                      <li style="color:#8e8ab3; font-style:italic;">Нет подключенных курсов</li>
+                    </ul>
+                  </div>
+
+                  <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08);">
+                  
+                  <p class="desc-text" style="font-size:0.75rem; margin:0; color:#8e8ab3;">Задачи для получения квалификационного гранта:</p>
+                  <ul class="task-checklist" style="font-size:0.75rem; margin:0; padding-left:15px; display:flex; flex-direction:column; gap:4px;">
+                    <li>Изучить интерактивные симуляторы в разделе Обучение.</li>
+                    <li>Сдать тесты по темам на положительную оценку.</li>
+                    <li>Показать результат в Космо-Симуляторе с точностью > 70%.</li>
+                  </ul>
+                  <button class="btn primary-btn pulse-glow" onclick="document.querySelector('[data-tab=study]').click();" style="width:100%; margin-top:5px;">ПЕРЕЙТИ К ОБУЧЕНИЮ</button>
+                </div>
+              </div>
+
+              <!-- Teacher View Feature -->
+              <div id="feature-teacher" class="role-feature-view hidden">
+                <h3 class="text-glow-cyan">КОНСОЛЬ УЧИТЕЛЯ</h3>
+                
+                <!-- Main teacher view (List of courses and course creator) -->
+                <div id="teacher-main-view">
+                  <p class="desc-text">Создавайте учебные группы и отслеживайте успеваемость учащихся.</p>
+                  <div class="teacher-actions">
+                    <div class="input-group">
+                      <label for="course-title-input">Создать новый курс:</label>
+                      <div class="input-row">
+                        <input type="text" id="course-title-input" placeholder="Например: Математический Кружок STEM">
+                        <button class="btn primary-btn" id="btn-create-course">СОЗДАТЬ</button>
+                      </div>
+                    </div>
+                    <div class="classroom-list" style="margin-top:20px;">
+                      <h4>Ваши активные курсы:</h4>
+                      <div class="courses-grid" id="teacher-courses-grid">
+                        <!-- Populated dynamically -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Course Detail View (Roster, publish notes, publish quizzes) -->
+                <div id="teacher-course-detail-view" class="hidden">
+                  <button class="btn secondary-btn" id="btn-teacher-back" style="margin-bottom:15px; padding: 4px 10px; font-size: 0.8rem;">← Назад к курсам</button>
+                  <h3 id="teacher-active-course-title" class="text-glow-cyan" style="margin-bottom:5px;">Курс</h3>
+                  <p style="font-size:0.8rem; color:#8e8ab3; margin-bottom:15px;">Код курса для учеников: <strong id="teacher-active-course-code" class="text-glow-pink">------</strong></p>
+                  
+                  <!-- Internal Tabs for Teacher Course Console -->
+                  <div class="teacher-tabs" style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button class="btn role-btn active" id="tab-teacher-roster">УЧЕНИКИ</button>
+                    <button class="btn role-btn" id="tab-teacher-material">ДОБАВИТЬ ЛЕКЦИЮ</button>
+                    <button class="btn role-btn" id="tab-teacher-quiz">СОЗДАТЬ ТЕСТ</button>
+                  </div>
+
+                  <!-- 1. Students Roster -->
+                  <div id="teacher-sub-roster" class="teacher-sub-tab">
+                    <div class="table-container" style="overflow-x:auto;">
+                      <table style="width:100%; font-size:0.8rem; border-collapse: collapse;">
+                        <thead>
+                          <tr class="leaderboard-header-row" style="background: rgba(255,255,255,0.05); text-align: left;">
+                            <th style="padding: 10px;">ИМЯ УЧЕНИКА</th>
+                            <th style="padding: 10px;">XP / УРОВЕНЬ</th>
+                            <th style="padding: 10px;">СИМУЛЯТОР (РЕКОРД)</th>
+                            <th style="padding: 10px;">СР. ТОЧНОСТЬ</th>
+                            <th style="padding: 10px;">ОЦЕНКИ ЗА ТЕСТЫ</th>
+                          </tr>
+                        </thead>
+                        <tbody id="teacher-roster-tbody">
+                          <!-- Populated dynamically -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- 2. Publish Material -->
+                  <div id="teacher-sub-material" class="teacher-sub-tab hidden">
+                    <div class="input-group">
+                      <label for="material-title-input">Название учебного материала:</label>
+                      <input type="text" id="material-title-input" placeholder="Тема лекции">
+                    </div>
+                    <div class="input-group" style="margin-top:10px;">
+                      <label for="material-content-input">Текст конспекта (поддерживает HTML):</label>
+                      <textarea id="material-content-input" placeholder="Введите содержание лекции..." rows="8" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:5px; color:#fff; padding:10px; font-family:inherit; box-sizing:border-box;"></textarea>
+                    </div>
+                    <button class="btn primary-btn" id="btn-teacher-publish-material" style="margin-top:10px;">ОПУБЛИКОВАТЬ</button>
+                  </div>
+
+                  <!-- 3. Publish Quiz -->
+                  <div id="teacher-sub-quiz" class="teacher-sub-tab hidden">
+                    <div class="input-group">
+                      <label for="quiz-title-input">Название теста:</label>
+                      <input type="text" id="quiz-title-input" placeholder="Например: Входное тестирование по Бинарным числам">
+                    </div>
+                    <div class="input-group" style="margin-top:10px;">
+                      <label for="quiz-desc-input">Описание теста:</label>
+                      <input type="text" id="quiz-desc-input" placeholder="Краткое описание">
+                    </div>
+                    
+                    <div id="quiz-questions-builder-area" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.08); padding-top:10px;">
+                      <h4 style="margin-bottom:10px;">Вопросы теста:</h4>
+                      <div id="builder-questions-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+                      <button class="btn secondary-btn" id="btn-add-builder-question" style="margin-top:10px; font-size:0.75rem;">+ Добавить вопрос</button>
+                    </div>
+                    <button class="btn primary-btn" id="btn-teacher-publish-quiz" style="margin-top:15px;">ОПУБЛИКОВАТЬ ТЕСТ</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Parent View Feature -->
+              <div id="feature-parent" class="role-feature-view hidden">
+                <h3 class="text-glow-pink">КАБИНЕТ РОДИТЕЛЯ</h3>
+                <p class="desc-text">Отслеживайте успеваемость вашего ребенка. Привяжите профиль по email.</p>
+                
+                <div class="parent-actions">
+                  <div class="input-group">
+                    <label for="child-email-input">Gmail/Email ребенка для мониторинга:</label>
+                    <div class="input-row">
+                      <input type="email" id="child-email-input" placeholder="student@staracademy.edu">
+                      <button class="btn primary-btn" id="btn-link-child">ПРИВЯЗАТЬ</button>
+                    </div>
+                  </div>
+
+                  <div class="child-status-box" style="margin-top:20px;">
+                    <h4>Связанные профили детей и их прогресс:</h4>
+                    <div id="parent-children-container" style="display:flex; flex-direction:column; gap:15px; margin-top:10px;">
+                      <!-- Child cards will go here dynamically -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 2. STUDY CENTER TAB (CONSPECTS, ACTIVE INTERACTIVE WIDGETS & TESTS) -->
+      <section id="tab-study" class="tab-view hidden">
+        <div class="study-layout">
+          <!-- Left Subjects Navigation (Accordions) -->
+          <div class="subjects-accordion-container">
+            <h2 class="text-glow-cyan">ЦЕНТР STEM ОБУЧЕНИЯ</h2>
+            <p class="subtitle-text">Изучите интерактивные лекции и пройдите тесты по 5 разделам сложности в стиле Khan Academy</p>
+            
+            <div class="study-accordion">
+              <!-- SUBJECT 1: MATHEMATICS -->
+              <div class="accordion-panel active" data-subject="math">
+                <button class="accordion-bar">
+                  <span>📐 МАТЕМАТИКА (АЛГЕБРА & АРИФМЕТИКА)</span>
+                  <span class="chevron">▲</span>
+                </button>
+                <div class="accordion-content-panel">
+                  <div class="sub-topic-selector" style="margin-bottom:10px;">
+                    <label for="math-topic-select" style="font-size:0.7rem; color:#8e8ab3; display:block; margin-bottom:4px;">РАЗДЕЛ КУРСА:</label>
+                    <select id="math-topic-select" class="topic-select" style="width:100%; padding:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:4px; font-size:0.8rem; font-family:inherit;">
+                      <option value="1">1. Линейные Уравнения (ax+b=c)</option>
+                      <option value="2">2. Квадратные Уравнения & Дискриминант</option>
+                      <option value="3">3. Системы Линейных Уравнений</option>
+                      <option value="4">4. Логарифмы & Экспоненты</option>
+                      <option value="5">5. Пределы и Производные</option>
+                    </select>
+                  </div>
+                  <div class="module-buttons">
+                    <button class="module-btn active" data-type="notes">Теория & Стенд</button>
+                    <button class="module-btn" data-type="test">Экзамен темы</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SUBJECT 2: PHYSICS -->
+              <div class="accordion-panel" data-subject="physics">
+                <button class="accordion-bar">
+                  <span>⚡ ФИЗИКА (МЕХАНИКА & ЭЛЕКТРИЧЕСТВО)</span>
+                  <span class="chevron">▼</span>
+                </button>
+                <div class="accordion-content-panel">
+                  <div class="sub-topic-selector" style="margin-bottom:10px;">
+                    <label for="physics-topic-select" style="font-size:0.7rem; color:#8e8ab3; display:block; margin-bottom:4px;">РАЗДЕЛ КУРСА:</label>
+                    <select id="physics-topic-select" class="topic-select" style="width:100%; padding:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:4px; font-size:0.8rem; font-family:inherit;">
+                      <option value="1">1. Второй Закон Ньютона & Динамика</option>
+                      <option value="2">2. Законы Сохранения & Импульс</option>
+                      <option value="3">3. Электрические Цепи & Закон Ома</option>
+                      <option value="4">4. Волны & Геометрическая Оптика</option>
+                      <option value="5">5. Термодинамика & Газовые Законы</option>
+                    </select>
+                  </div>
+                  <div class="module-buttons">
+                    <button class="module-btn" data-type="notes">Теория & Стенд</button>
+                    <button class="module-btn" data-type="test">Экзамен темы</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SUBJECT 3: COMPUTER SCIENCE -->
+              <div class="accordion-panel" data-subject="cs">
+                <button class="accordion-bar">
+                  <span>💻 ИНФОРМАТИКА (ЛОГИКА & АЛГОРИТМЫ)</span>
+                  <span class="chevron">▼</span>
+                </button>
+                <div class="accordion-content-panel">
+                  <div class="sub-topic-selector" style="margin-bottom:10px;">
+                    <label for="cs-topic-select" style="font-size:0.7rem; color:#8e8ab3; display:block; margin-bottom:4px;">РАЗДЕЛ КУРСА:</label>
+                    <select id="cs-topic-select" class="topic-select" style="width:100%; padding:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:4px; font-size:0.8rem; font-family:inherit;">
+                      <option value="1">1. Двоичная & Шестнадцатеричная Системы</option>
+                      <option value="2">2. Булева Алгебра & Логические Вентили</option>
+                      <option value="3">3. Сложность Алгоритмов (Big O)</option>
+                      <option value="4">4. Алгоритмы Поиска & Сортировки</option>
+                      <option value="5">5. Структуры Данных (Стек, Дерево)</option>
+                    </select>
+                  </div>
+                  <div class="module-buttons">
+                    <button class="module-btn" data-type="notes">Теория & Стенд</button>
+                    <button class="module-btn" data-type="test">Экзамен темы</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SUBJECT 4: TEACHER COURSES -->
+              <div class="accordion-panel" data-subject="custom_courses">
+                <button class="accordion-bar" style="border-top:1px dashed rgba(0, 243, 255, 0.2); padding-top:15px; margin-top:10px;">
+                  <span>🎓 КУРСЫ НАШИХ ПРЕПОДАВАТЕЛЕЙ</span>
+                  <span class="chevron">▼</span>
+                </button>
+                <div class="accordion-content-panel">
+                  <div class="sub-topic-selector" style="margin-bottom:10px;">
+                    <label for="student-active-course-select" style="font-size:0.7rem; color:#8e8ab3; display:block; margin-bottom:4px;">ВЫБЕРИТЕ КУРС:</label>
+                    <select id="student-active-course-select" class="topic-select" style="width:100%; padding:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:4px; font-size:0.8rem; font-family:inherit;">
+                      <option value="">-- Войдите и выберите курс --</option>
+                    </select>
+                  </div>
+                  <div id="custom-course-content-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <p style="font-size:0.75rem; color:#8e8ab3; font-style:italic; text-align:center;">Выберите подключенный курс выше, чтобы загрузить задания.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Content Container (Interactive Sandboxes and Exam Sheets) -->
+          <div class="study-stage glass-panel">
+            <div class="stage-glow"></div>
+            <div id="study-stage-content"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. STARFLIGHT SIMULATOR TAB (GAME WINDOW) -->
+      <section id="tab-simulator" class="tab-view hidden">
+        <div class="simulator-layout">
+          
+          <!-- Hangar Control Panel (Game Configuration Screen) -->
+          <div id="sim-setup-screen" class="glass-panel setup-panel">
+            <h2 class="text-glow-cyan">ПОЛЕТНЫЙ ТРЕНАЖЕР STEM</h2>
+            <p class="subtitle-desc">Практическая отработка полученных теоретических знаний в бою</p>
+
+            <div class="setup-controls-grid">
+              <!-- Topic Selector -->
+              <div class="setup-card">
+                <h3>1. УЧЕБНАЯ ТЕМА МИССИИ</h3>
+                <div class="selector-options" id="sim-topic-group">
+                  <button class="btn setup-opt-btn active" data-topic="math_mult">ТАБЛИЦА УМНОЖЕНИЯ (МАТ)</button>
+                  <button class="btn setup-opt-btn" data-topic="math_eq">ЛИНЕЙНЫЕ УРАВНЕНИЯ (МАТ)</button>
+                  <button class="btn setup-opt-btn" data-topic="cs_binary">ДВОИЧНЫЙ КОД (CS)</button>
+                  <button class="btn setup-opt-btn" data-topic="cs_boolean">БУЛЕВА ЛОГИКА (CS)</button>
+                </div>
+              </div>
+
+              <!-- Ship Selector -->
+              <div class="setup-card">
+                <h3>2. ВЫБОР ИСТРЕБИТЕЛЯ</h3>
+                <div class="ship-selector-inline">
+                  <div class="mini-ship-card active" data-ship="interceptor">
+                    <h4>STRIKER-X</h4>
+                    <p class="type">Маневренный перехватчик</p>
+                    <span class="ability">Супер-лазеры</span>
+                  </div>
+                  <div class="mini-ship-card" data-ship="dreadnought">
+                    <h4>VANGUARD</h4>
+                    <p class="type">Тяжелый крейсер</p>
+                    <span class="ability">Круговой залп flak</span>
+                  </div>
+                  <div class="mini-ship-card" data-ship="phantom">
+                    <h4>PHANTOM</h4>
+                    <p class="type">Разведывательное судно</p>
+                    <span class="ability">Замедление времени</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inclusivity & Accessibility Panel with Sound Selector -->
+            <div class="accessibility-box glass-panel">
+              <h3 class="text-glow-pink">ИНКЛЮЗИВНОСТЬ И НАСТРОЙКИ СИМУЛЯЦИИ</h3>
+              <div class="acc-toggles">
+                <div class="acc-row">
+                  <span>Реакция-Ассист (Скорость):</span>
+                  <input type="range" id="sim-speed-modifier" min="50" max="100" value="100">
+                  <span id="val-sim-speed">100% (Норма)</span>
+                </div>
+                
+                <!-- New Soundtrack customization -->
+                <div class="acc-row">
+                  <span>Саундтрек симулятора:</span>
+                  <select id="sim-music-track" class="soundtrack-select">
+                    <option value="synthwave">Энергичный Синтвейв (Bass Punch)</option>
+                    <option value="retro">Ретро Космо-Бит (Medium Pace)</option>
+                    <option value="ambient">Кибернетический Эмбиент (Focus/Study)</option>
+                  </select>
+                  <span>Синтезатор</span>
+                </div>
+
+                <div class="acc-checkbox-row">
+                  <label class="check-container">
+                    <input type="checkbox" id="acc-reduced-motion">
+                    <span class="checkmark"></span>
+                    Защита от эпилепсии (выключить вспышки экрана и тряску)
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <button id="btn-start-simulation" class="btn primary-btn pulse-glow launch-btn">ЗАПУСТИТЬ ТРЕНАЖЕР</button>
+          </div>
+
+          <!-- Active Game HUD and Canvas Window -->
+          <div id="sim-active-container" class="hidden">
+            <!-- Top HUD Quest banner (EduTech specific) -->
+            <div id="sim-quest-bar" class="glass-panel">
+              <div class="quest-glow"></div>
+              <span class="quest-label">АКТИВНАЯ ЗАДАЧА:</span>
+              <span id="sim-quest-text" class="quest-math-equation">РЕШИТЕ: 6 x 7 = ?</span>
+            </div>
+
+            <div id="hud" class="hidden">
+              <div class="hud-top">
+                <div class="hud-left">
+                  <div class="stat-group">
+                    <span class="label">ОЧКИ</span>
+                    <span id="hud-score" class="value">000,000</span>
+                  </div>
+                  <div class="stat-group">
+                    <span class="label">РOUND / WAVE</span>
+                    <span id="hud-wave" class="value font-neon">WAVE 1</span>
+                  </div>
+                </div>
+                
+                <div class="hud-center">
+                  <div class="active-powerup-indicator hidden" id="powerup-hud">
+                    <span class="powerup-text">SHIELD ACTIVE</span>
+                    <div class="powerup-timer-bar"><div class="bar"></div></div>
+                  </div>
+                </div>
+
+                <div class="hud-right">
+                  <div class="shard-counter">
+                    <svg viewBox="0 0 24 24" width="16" height="16" class="icon-shard">
+                      <polygon points="12,2 22,12 12,22 2,12" fill="#ff007f" />
+                    </svg>
+                    <span id="hud-shards">0</span>
+                  </div>
+                  <button id="btn-pause" class="icon-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Health and Shield Indicators (Bottom of Screen) -->
+              <div class="hud-bottom">
+                <div class="vital-bar shield-bar">
+                  <div class="bar-label">ЩИТЫ</div>
+                  <div class="bar-track">
+                    <div id="hud-shield-fill" class="bar-fill" style="width: 100%"></div>
+                  </div>
+                  <div id="hud-shield-val" class="bar-percentage">100%</div>
+                </div>
+                <div class="vital-bar hull-bar">
+                  <div class="bar-label">КОРПУС</div>
+                  <div class="bar-track">
+                    <div id="hud-hull-fill" class="bar-fill" style="width: 100%"></div>
+                  </div>
+                  <div id="hud-hull-val" class="bar-percentage">100%</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BOSS WARNING ALARM -->
+            <div id="boss-alarm" class="hidden">
+              <div class="alarm-banner">
+                <div class="alarm-icon">⚠</div>
+                <div class="alarm-title">БОСС ПРИБЛИЖАЕТСЯ</div>
+                <div class="alarm-subtitle">УГРОЗА: КРИТИЧЕСКАЯ</div>
+              </div>
+            </div>
+
+            <!-- CANVAS SCREEN -->
+            <div id="game-canvas-container" class="hidden">
+              <canvas id="game-canvas" width="1000" height="700"></canvas>
+            </div>
+          </div>
+
+          <!-- PAUSE OVERLAY -->
+          <div id="pause-screen" class="menu-screen hidden">
+            <h2>ПАУЗА СИСТЕМЫ</h2>
+            <div class="menu-card glass-panel">
+              <div class="settings-group">
+                <h3>РЕГУЛИРОВКА ЗВУКА</h3>
+                <div class="slider-row">
+                  <span>ОБЩАЯ ГРОМКОСТЬ</span>
+                  <input type="range" id="volume-master" min="0" max="100" value="70">
+                  <span id="val-volume-master">70%</span>
+                </div>
+                <div class="slider-row">
+                  <span>МУЗЫКА</span>
+                  <input type="range" id="volume-music" min="0" max="100" value="60">
+                  <span id="val-volume-music">60%</span>
+                </div>
+                <div class="slider-row">
+                  <span>ЭФФЕКТЫ (SFX)</span>
+                  <input type="range" id="volume-sfx" min="0" max="100" value="80">
+                  <span id="val-volume-sfx">80%</span>
+                </div>
+              </div>
+
+              <div class="pause-actions">
+                <button id="btn-resume" class="btn primary-btn">ВЕРНУТЬСЯ В КАБИНУ</button>
+                <button id="btn-quit" class="btn secondary-btn">ПОКИНУТЬ ПОЛЕТ</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- GAME OVER SCREEN -->
+          <div id="game-over-screen" class="menu-screen hidden">
+            <h2 class="alert-title text-glow-pink">КОРАБЛЬ РАЗРУШЕН</h2>
+            <p class="subtitle">СИМУЛЯЦИЯ ПОЛЕТА УСПЕШНО ЗАВЕРШЕНА</p>
+
+            <div class="game-over-stats glass-panel">
+              <div class="stat-row">
+                <span>НАБРАННЫЕ ОЧКИ:</span>
+                <span id="go-score" class="value text-glow-cyan">0</span>
+              </div>
+              <div class="stat-row">
+                <span>ПРОЙДЕНО ВОЛН:</span>
+                <span id="go-wave" class="value">1</span>
+              </div>
+              <div class="stat-row">
+                <span>СОБРАНО ШАРДОВ:</span>
+                <span id="go-shards" class="value text-glow-pink">0</span>
+              </div>
+              <div class="stat-row">
+                <span>ТОЧНОСТЬ ВЫЧИСЛЕНИЙ:</span>
+                <span id="go-accuracy" class="value" style="color: #39ff14;">100%</span>
+              </div>
+            </div>
+
+            <div class="game-over-actions">
+              <button id="btn-restart" class="btn primary-btn pulse-glow">НАЧАТЬ ЗАНОВО</button>
+              <button id="btn-home" class="btn secondary-btn">ВЕРНУТЬСЯ В АНГАР</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 4. GRADEBOOK COCKPIT (ANALYTICS & STATS) -->
+      <section id="tab-gradebook" class="tab-view hidden">
+        <div class="gradebook-layout">
+          
+          <div class="gradebook-header glass-panel">
+            <h2 class="text-glow-cyan">АНАЛИТИЧЕСКИЙ ОТЧЕТ КУРСАНТА</h2>
+            <p class="subtitle-text">Агрегированные данные об успеваемости в теории (тесты) и на практике (полеты)</p>
+            <button class="btn secondary-btn font-neon" id="btn-generate-report">СКАЧАТЬ ОТЧЕТНЫЙ ТАБЕЛЬ (PDF)</button>
+          </div>
+
+          <div class="analytics-dashboard-grid">
+            <!-- Academic Written Test Scores -->
+            <div class="analytics-card glass-panel">
+              <h3>РЕЗУЛЬТАТЫ ПИСЬМЕННЫХ ЭКЗАМЕНОВ</h3>
+              <div class="grades-progress-list">
+                <div class="grade-item">
+                  <div class="item-header">
+                    <span>📐 Математика (Алгебра)</span>
+                    <span id="grade-math-val" class="item-score">НЕ СДАНО</span>
+                  </div>
+                  <div class="item-bar-container"><div class="item-bar" id="grade-math-bar" style="width: 0%"></div></div>
+                </div>
+
+                <div class="grade-item">
+                  <div class="item-header">
+                    <span>⚡ Физика (Механика & Оптика)</span>
+                    <span id="grade-physics-val" class="item-score">НЕ СДАНО</span>
+                  </div>
+                  <div class="item-bar-container"><div class="item-bar" id="grade-physics-bar" style="width: 0%"></div></div>
+                </div>
+
+                <div class="grade-item">
+                  <div class="item-header">
+                    <span>💻 Информатика (Логика & Алгоритмы)</span>
+                    <span id="grade-cs-val" class="item-score">НЕ СДАНО</span>
+                  </div>
+                  <div class="item-bar-container"><div class="item-bar" id="grade-cs-bar" style="width: 0%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Space Flight Cognitive Statistics -->
+            <div class="analytics-card glass-panel">
+              <h3>МЕТРИКИ КОСМО-СИМУЛЯТОРА</h3>
+              <div class="flight-stats-grid">
+                <div class="flight-stat-box">
+                  <span class="label">РЕКОРД ОЧКОВ</span>
+                  <span id="analytics-highscore" class="value text-glow-cyan">0</span>
+                </div>
+
+                <div class="flight-stat-box">
+                  <span class="label">ТОЧНОСТЬ ОТВЕТОВ В БОЮ</span>
+                  <span id="analytics-accuracy" class="value text-glow-pink">0%</span>
+                </div>
+
+                <div class="flight-stat-box">
+                  <span class="label">РЕШЕНО ПРИМЕРОВ</span>
+                  <span id="analytics-solved" class="value">0</span>
+                </div>
+
+                <div class="flight-stat-box">
+                  <span class="label">СКОРОСТЬ МЫШЛЕНИЯ</span>
+                  <span id="analytics-speed" class="value" style="color: #39ff14;">0 мс</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Conceptual Competence Map -->
+            <div class="analytics-card glass-panel radar-strength-card">
+              <h3>КАРТА СИЛЬНЫХ СТОРОН (STEM)</h3>
+              <p class="desc">Анализ когнитивной предрасположенности по результатам тестов:</p>
+              
+              <div class="skills-radar-replacement">
+                <div class="radar-row">
+                  <span>Вычисления (Арифметика)</span>
+                  <div class="mini-bar-track"><div class="fill text-glow-cyan" id="radar-bar-calc" style="width: 0%"></div></div>
+                </div>
+                <div class="radar-row">
+                  <span>Логическое мышление (Булева Алгебра)</span>
+                  <div class="mini-bar-track"><div class="fill" id="radar-bar-logic" style="width: 0%"></div></div>
+                </div>
+                <div class="radar-row">
+                  <span>Физические концепции (Оптика/Энергия)</span>
+                  <div class="mini-bar-track"><div class="fill" id="radar-bar-phys" style="width: 0%"></div></div>
+                </div>
+                <div class="radar-row">
+                  <span>Программирование (Двоичные коды)</span>
+                  <div class="mini-bar-track"><div class="fill" id="radar-bar-code" style="width: 0%"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEACHER VIEWPORT 1: HANGAR / CONSOLE -->
+      <section id="tab-teacher-hangar" class="tab-view hidden">
+        <div class="hangar-grid-upgraded">
+          <!-- Left Column: Teacher Profile & Info -->
+          <div class="hangar-left-col">
+            <div class="glass-panel profile-card-upgraded">
+              <div class="card-header-line">
+                <h2 class="text-glow-cyan">ПРОФИЛЬ ИНСТРУКТОРА</h2>
+                <span class="status-indicator" style="color:var(--color-cyan); border-color:var(--color-cyan-glow); background:rgba(0,243,255,0.1);">РОЛЬ: УЧИТЕЛЬ</span>
+              </div>
+              <div class="profile-meta">
+                <div class="avatar-glow" style="background: linear-gradient(135deg, var(--color-cyan) 0%, var(--color-purple) 100%); box-shadow: 0 0 20px var(--color-cyan-glow); width:65px; height:65px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem;">
+                  <span>👩‍🏫</span>
+                </div>
+                <div class="profile-details-upgraded" style="display:flex; flex-direction:column; gap:4px; flex-grow:1;">
+                  <h3 id="teacher-profile-name" style="font-family:var(--font-display); font-size:1.1rem; color:#fff;">Инструктор Академии</h3>
+                  <p style="font-size:0.75rem; color:#8e8ab3;">Статус: Старший методист STEM</p>
+                  <p style="font-size:0.75rem; color:#8e8ab3; margin-top: 5px;">Активных групп: <span id="teacher-courses-count" class="text-glow-pink" style="font-weight:bold;">0</span></p>
+                </div>
+              </div>
+              <!-- Role Selector (hidden for logged-in users — role is permanent) -->
+              <div class="role-switcher-section role-selector-box" style="margin-top:15px;">
+                <h4 style="font-family:var(--font-display); font-size:0.78rem; color:#a5a2bf; margin-bottom:8px;">СМЕНИТЬ РОЛЬ СИСТЕМЫ:</h4>
+                <div class="role-buttons" style="display:flex; gap:8px;">
+                  <button class="btn role-btn" data-role="student" style="flex-grow:1; padding:8px; font-size:0.75rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); color:#bfbdd3;">СТУДЕНТ</button>
+                  <button class="btn role-btn active" data-role="teacher" style="flex-grow:1; padding:8px; font-size:0.75rem; background:var(--color-pink); border:1px solid var(--color-pink); color:#fff; box-shadow:0 0 10px var(--color-pink-glow);">УЧИТЕЛЬ</button>
+                  <button class="btn role-btn" data-role="parent" style="flex-grow:1; padding:8px; font-size:0.75rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); color:#bfbdd3;">РОДИТЕЛЬ</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="glass-panel instruction-panel" style="padding:20px;">
+              <h3 class="text-glow-pink" style="font-family:var(--font-display); font-size:0.95rem; margin-bottom:10px;">ИНСТРУКЦИЯ ИНСТРУКТОРА</h3>
+              <p class="desc-text" style="font-size:0.75rem; line-height:1.5; color:#a5a2bf;">
+                1. Создайте учебную группу (класс) во вкладке Консоль.<br>
+                2. Передайте 6-значный <strong>код курса</strong> вашим ученикам.<br>
+                3. Выберите курс, нажав на его карточку.<br>
+                4. После этого вкладки <strong>Ученики</strong> и <strong>Материалы</strong> откроются для управления этим курсом.<br>
+                5. Публикуйте лекции и интерактивные тесты во вкладке Материалы.
+              </p>
+            </div>
+          </div>
+          
+          <!-- Right Column: Course Creator & List -->
+          <div class="hangar-right-col">
+            <div class="glass-panel" style="padding:25px; flex-grow:1; display:flex; flex-direction:column; overflow:hidden;">
+              <h3 class="text-glow-cyan" style="font-family:var(--font-display); font-size:0.95rem; margin-bottom:10px;">УЧЕБНЫЕ ГРУППЫ</h3>
+              <p class="desc-text" style="font-size:0.72rem; color:#a5a2bf; margin-bottom:15px;">Создавайте учебные группы и координируйте образовательный процесс.</p>
+              
+              <div class="input-group" style="margin-bottom:20px;">
+                <label for="teacher-course-title-input" style="font-size:0.7rem; color:#8e8ab3;">Название новой группы / курса:</label>
+                <div class="input-row" style="display:flex; gap:10px; margin-top:5px;">
+                  <input type="text" id="teacher-course-title-input" placeholder="Например: Математический Кружок STEM" style="flex:1; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit;">
+                  <button class="btn primary-btn" id="btn-teacher-create-course" style="padding:10px 20px; font-weight:bold; font-size:0.8rem;">СОЗДАТЬ</button>
+                </div>
+              </div>
+              
+              <div class="classroom-list" style="flex-grow:1; display:flex; flex-direction:column; overflow:hidden;">
+                <h4 style="margin-bottom:10px; color:#bfbdd3; font-size:0.85rem;">Ваши активные курсы:</h4>
+                <div class="courses-grid" id="teacher-courses-grid-tab" style="flex-grow:1; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:15px; padding-right:5px;">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEACHER VIEWPORT 2: STUDENTS ROSTER -->
+      <section id="tab-teacher-gradebook" class="tab-view hidden">
+        <div class="gradebook-layout" style="display:flex; flex-direction:column; gap:20px; height:100%;">
+          <div class="gradebook-header glass-panel" style="display:flex; justify-content:space-between; align-items:center; padding:15px 30px;">
+            <div>
+              <h2 class="text-glow-cyan" style="font-family:var(--font-display); font-size:1.25rem;">ЭЛЕКТРОННЫЙ ЖУРНАЛ КЛАССА</h2>
+              <p class="subtitle-text" style="margin-bottom:0; font-size:0.75rem; color:#8a88a0; margin-top:5px;">Список курсантов, успеваемость в теории и на практике. Выбранный курс: <strong id="gradebook-active-course-name" class="text-glow-pink" style="font-weight:bold;">Выберите курс на Консоли</strong></p>
+            </div>
+            <button class="btn secondary-btn font-neon" id="btn-teacher-generate-report" style="display:none; padding:6px 12px; font-size:0.75rem;">СКАЧАТЬ ОТЧЕТ (PDF)</button>
+          </div>
+          
+          <div class="glass-panel" style="flex-grow:1; padding:25px; overflow:hidden; display:flex; flex-direction:column;">
+            <div id="gradebook-no-course-placeholder" style="flex-grow:1; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#8e8ab3; font-style:italic; text-align:center;">
+              <span style="font-size:3rem; margin-bottom:15px;">📊</span>
+              <p>Пожалуйста, выберите активную учебную группу в разделе "КОНСОЛЬ", чтобы открыть журнал оценок.</p>
+            </div>
+            
+            <div id="gradebook-roster-container" class="hidden" style="flex-grow:1; display:flex; flex-direction:column; overflow:hidden;">
+              <div class="table-container" style="flex-grow:1; overflow-y:auto;">
+                <table style="width:100%; font-size:0.85rem; border-collapse: collapse; text-align:left;">
+                  <thead>
+                    <tr class="leaderboard-header-row" style="background: rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.08);">
+                      <th style="padding: 12px 10px;">ИМЯ УЧЕНИКА</th>
+                      <th style="padding: 12px 10px;">EMAIL</th>
+                      <th style="padding: 12px 10px;">XP / УРОВЕНЬ</th>
+                      <th style="padding: 12px 10px;">СИМУЛЯТОР (РЕКОРД)</th>
+                      <th style="padding: 12px 10px;">СР. ТОЧНОСТЬ</th>
+                      <th style="padding: 12px 10px;">ПОСЛЕДНИЕ ОЦЕНКИ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gradebook-roster-tbody-tab">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEACHER VIEWPORT 3: COURSE CONSTRUCTOR -->
+      <section id="tab-teacher-constructor" class="tab-view hidden">
+        <div class="study-layout">
+          <!-- Left Column: Navigation or constructor switch -->
+          <div class="subjects-accordion-container" style="display:flex; flex-direction:column; gap:15px;">
+            <h2 class="text-glow-cyan" style="font-family:var(--font-display); font-size:1.4rem; letter-spacing:2px; margin-bottom:6px;">КОНСТРУКТОР КУРСА</h2>
+            <p class="subtitle-text" style="font-size:0.8rem; color:#8a88a0; margin-bottom:25px;">Добавление лекций, практических материалов и создание тестов для проверки знаний.</p>
+            
+            <div class="glass-panel" style="padding:20px; display:flex; flex-direction:column; gap:15px;">
+              <h4 style="font-size:0.8rem; color:#bfbdd3; font-family:var(--font-display);">РАЗДЕЛ РЕДАКТОРА:</h4>
+              <div class="module-buttons" style="padding:0; display:flex; flex-direction:column; gap:8px;">
+                <button class="module-btn active" id="btn-constructor-tab-material">📖 Добавить лекцию</button>
+                <button class="module-btn" id="btn-constructor-tab-quiz">📝 Создать тест</button>
+              </div>
+              
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08);">
+              <div style="font-size:0.75rem; color:#8e8ab3;">
+                <strong>Активный курс:</strong>
+                <p id="constructor-active-course-name" class="text-glow-pink" style="margin-top:5px; font-weight:bold;">Не выбран</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column: Constructor Form Workspace -->
+          <div class="study-stage glass-panel" style="display:flex; flex-direction:column;">
+            <div class="stage-glow"></div>
+            <div id="constructor-stage-content" style="padding:30px; height:100%; overflow-y:auto;">
+              
+              <div id="constructor-no-course-placeholder" style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#8e8ab3; font-style:italic; text-align:center;">
+                <span style="font-size:3rem; margin-bottom:15px;">🛠</span>
+                <p>Пожалуйста, выберите активную учебную группу в разделе "КОНСОЛЬ", чтобы начать добавление материалов.</p>
+              </div>
+              
+              <!-- A. Material Creator form -->
+              <div id="constructor-material-form" class="hidden" style="display:flex; flex-direction:column; gap:15px;">
+                <h3 class="text-glow-cyan">ПУБЛИКАЦИЯ УЧЕБНОГО МАТЕРИАЛА</h3>
+                <p class="desc-text">Конспект лекции будет мгновенно доступен всем ученикам, зачисленным на этот курс.</p>
+                
+                <div class="input-group">
+                  <label for="material-title-input-tab">Тема лекции / Название:</label>
+                  <input type="text" id="material-title-input-tab" placeholder="Например: Основы булевой алгебры и вентилей" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; margin-top:5px;">
+                </div>
+                
+                <div class="input-group">
+                  <label for="material-content-input-tab">Текст конспекта (поддерживает разметку HTML):</label>
+                  <textarea id="material-content-input-tab" placeholder="Введите содержание лекции..." rows="12" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:5px; color:#fff; padding:10px; font-family:inherit; box-sizing:border-box; margin-top:5px; line-height:1.5; resize:vertical;"></textarea>
+                </div>
+                
+                <button class="btn primary-btn pulse-glow" id="btn-constructor-publish-material" style="padding:12px; font-weight:bold; font-size:0.85rem; margin-top:10px; width:100%;">ОПУБЛИКОВАТЬ ЛЕКЦИЮ</button>
+              </div>
+              
+              <!-- B. Quiz Builder form -->
+              <div id="constructor-quiz-form" class="hidden" style="display:flex; flex-direction:column; gap:15px;">
+                <h3 class="text-glow-pink">КОНСТРУКТОР ТЕСТИРОВАНИЯ</h3>
+                <p class="desc-text">Создайте интерактивный тест с несколькими вариантами ответов.</p>
+                
+                <div class="input-group">
+                  <label for="quiz-title-input-tab">Название теста:</label>
+                  <input type="text" id="quiz-title-input-tab" placeholder="Например: Тестирование по логическим вентилям" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; margin-top:5px;">
+                </div>
+                
+                <div class="input-group">
+                  <label for="quiz-desc-input-tab">Описание теста / Сводка требований:</label>
+                  <input type="text" id="quiz-desc-input-tab" placeholder="Краткая инструкция (напр. Проходной балл 60%)" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; margin-top:5px;">
+                </div>
+                
+                <div id="quiz-questions-builder-area-tab" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.08); padding-top:15px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h4 style="color:#fff;">Вопросы теста:</h4>
+                    <button class="btn secondary-btn" id="btn-add-builder-question-tab" style="font-size:0.75rem; padding:5px 12px;">+ Добавить вопрос</button>
+                  </div>
+                  <div id="builder-questions-list-tab" style="display:flex; flex-direction:column; gap:15px;">
+                    <!-- Question builder cards populated dynamically -->
+                  </div>
+                </div>
+                
+                <button class="btn primary-btn pulse-glow" id="btn-constructor-publish-quiz" style="padding:12px; font-weight:bold; font-size:0.85rem; margin-top:15px; width:100%;">ОПУБЛИКОВАТЬ ТЕСТ</button>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARENT VIEWPORT 1: CABINET / PROFILE -->
+      <section id="tab-parent-hangar" class="tab-view hidden">
+        <div class="hangar-grid-upgraded">
+          <!-- Left Column: Parent profile card & linking children -->
+          <div class="hangar-left-col">
+            <div class="glass-panel profile-card-upgraded">
+              <div class="card-header-line">
+                <h2 class="text-glow-pink">КАБИНЕТ РОДИТЕЛЯ</h2>
+                <span class="status-indicator" style="color:var(--color-pink); border-color:var(--color-pink-glow); background:rgba(255,0,127,0.1);">РОЛЬ: РОДИТЕЛЬ</span>
+              </div>
+              <div class="profile-meta" style="display:flex; gap:20px; align-items:center; background:rgba(255,255,255,0.02); padding:15px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+                <div class="avatar-glow" style="background: linear-gradient(135deg, var(--color-pink) 0%, var(--color-purple) 100%); box-shadow: 0 0 20px var(--color-pink-glow); width:65px; height:65px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem;">
+                  <span>👪</span>
+                </div>
+                <div class="profile-details-upgraded" style="display:flex; flex-direction:column; gap:4px; flex-grow:1;">
+                  <h3 id="parent-profile-name" style="font-family:var(--font-display); font-size:1.1rem; color:#fff;">Родитель Курсанта</h3>
+                  <p style="font-size:0.75rem; color:#8e8ab3;">Статус: Наблюдатель успеваемости</p>
+                  <p style="font-size:0.75rem; color:#8e8ab3; margin-top:5px;">Привязанных детей: <span id="parent-children-count" class="text-glow-cyan" style="font-weight:bold;">0</span></p>
+                </div>
+              </div>
+              <!-- Role Selector (hidden for logged-in users — role is permanent) -->
+              <div class="role-switcher-section role-selector-box" style="margin-top:15px;">
+                <h4 style="font-family:var(--font-display); font-size:0.78rem; color:#a5a2bf; margin-bottom:8px;">СМЕНИТЬ РОЛЬ СИСТЕМЫ:</h4>
+                <div class="role-buttons" style="display:flex; gap:8px;">
+                  <button class="btn role-btn" data-role="student" style="flex-grow:1; padding:8px; font-size:0.75rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); color:#bfbdd3;">СТУДЕНТ</button>
+                  <button class="btn role-btn" data-role="teacher" style="flex-grow:1; padding:8px; font-size:0.75rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); color:#bfbdd3;">УЧИТЕЛЬ</button>
+                  <button class="btn role-btn active" data-role="parent" style="flex-grow:1; padding:8px; font-size:0.75rem; background:var(--color-pink); border:1px solid var(--color-pink); color:#fff; box-shadow:0 0 10px var(--color-pink-glow);">РОДИТЕЛЬ</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="glass-panel linking-form-panel" style="padding:20px;">
+              <h3 class="text-glow-cyan" style="font-family:var(--font-display); font-size:0.95rem; margin-bottom:8px;">ПРИВЯЗАТЬ УЧЕНИКА</h3>
+              <p class="desc-text" style="font-size:0.72rem; color:#a5a2bf; margin-bottom:12px;">Введите email-адрес аккаунта вашего ребенка, чтобы получать доступ к его оценкам и прогрессу.</p>
+              
+              <div class="input-group">
+                <label for="parent-child-email-input" style="font-size:0.7rem; color:#8e8ab3;">Gmail/Email ребенка для мониторинга:</label>
+                <div class="input-row" style="display:flex; gap:10px; margin-top:5px;">
+                  <input type="email" id="parent-child-email-input" placeholder="student@staracademy.edu" style="flex:1; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit;">
+                  <button class="btn primary-btn" id="btn-parent-link-child" style="padding:10px 15px; font-weight:bold; font-size:0.8rem;">ПРИВЯЗАТЬ</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column: Children quick review list -->
+          <div class="hangar-right-col">
+            <div class="glass-panel" style="padding:25px; flex-grow:1; display:flex; flex-direction:column; overflow:hidden;">
+              <h3 class="text-glow-pink" style="font-family:var(--font-display); font-size:0.95rem; margin-bottom:10px;">СВЯЗАННЫЕ ПРОФИЛИ</h3>
+              <p class="desc-text" style="font-size:0.72rem; color:#a5a2bf; margin-bottom:15px;">Список ваших детей, зарегистрированных в Star Academy, и сводка их текущих уровней.</p>
+              
+              <div class="children-list-container" style="flex-grow:1; overflow-y:auto; display:flex; flex-direction:column; gap:15px; padding-right:5px;" id="parent-children-list-tab">
+                <!-- Child summary cards populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PARENT VIEWPORT 2: DETAILED MONITORING -->
+      <section id="tab-parent-monitoring" class="tab-view hidden">
+        <div class="gradebook-layout" style="display:flex; flex-direction:column; gap:20px; height:100%;">
+          <div class="gradebook-header glass-panel" style="display:flex; justify-content:space-between; align-items:center; padding:15px 30px;">
+            <div>
+              <h2 class="text-glow-cyan" style="font-family:var(--font-display); font-size:1.25rem;">КОГНИТИВНЫЙ МОНИТОРИНГ УСПЕВАЕМОСТИ</h2>
+              <p class="subtitle-text" style="margin-bottom:0; font-size:0.75rem; color:#8a88a0; margin-top:5px;">Просмотр логов, оценок и когнитивной карты ребенка в реальном времени.</p>
+            </div>
+            <!-- Child Selector Dropdown if there are multiple kids -->
+            <div style="display:flex; align-items:center; gap:10px;">
+              <label for="parent-child-select" style="font-size:0.75rem; color:#8e8ab3; font-weight:bold;">УЧЕНИК:</label>
+              <select id="parent-child-select" style="padding:8px 15px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; font-weight:bold; font-size:0.8rem;">
+                <option value="">-- Выберите ребенка --</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="glass-panel" style="flex-grow:1; padding:25px; overflow:hidden; display:flex; flex-direction:column;">
+            <div id="parent-monitoring-no-child-placeholder" style="flex-grow:1; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#8e8ab3; font-style:italic; text-align:center;">
+              <span style="font-size:3rem; margin-bottom:15px;">📈</span>
+              <p>Пожалуйста, привяжите ребенка во вкладке "КАБИНЕТ" и выберите его в выпадающем списке сверху.</p>
+            </div>
+            
+            <div id="parent-monitoring-container" class="hidden" style="flex-grow:1; display:flex; flex-direction:column; gap:20px; overflow-y:auto; padding-right:5px;">
+              <!-- 1. Stats row -->
+              <div class="flight-stats-grid" id="monitoring-child-stats" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:15px; margin-bottom:5px;">
+                <!-- Mini stat boxes filled dynamically -->
+              </div>
+              
+              <!-- 2. Dual grid: Grades & Strengths Radar -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:5px;">
+                <!-- Left: Recent achievements log -->
+                <div class="analytics-card glass-panel" style="padding:20px; display:flex; flex-direction:column; height:320px;">
+                  <h3 style="margin-bottom:12px; font-size:0.9rem; color:#fff; font-family:var(--font-display);">ЛОГ УСПЕВАЕМОСТИ И АКТИВНОСТИ</h3>
+                  <div class="grades-progress-list" id="monitoring-child-grades" style="flex-grow:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+                    <!-- Activity logs loaded dynamically -->
+                  </div>
+                </div>
+                <!-- Right: Strengths radar -->
+                <div class="analytics-card glass-panel" style="padding:20px; display:flex; flex-direction:column; height:320px;">
+                  <h3 style="margin-bottom:12px; font-size:0.9rem; color:#fff; font-family:var(--font-display);">КАРТА СИЛЬНЫХ СТОРОН (STEM)</h3>
+                  <div class="skills-radar-replacement" id="monitoring-child-radar" style="flex-grow:1; display:flex; flex-direction:column; justify-content:center; gap:8px;">
+                    <!-- Radar bars filled dynamically -->
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 3. Attendance & Schedule Log (LMS transparency) -->
+              <div class="analytics-card glass-panel" style="padding:20px; margin-top:5px;">
+                <h3 style="margin-bottom:12px; font-size:0.9rem; color:#fff; font-family:var(--font-display);">РАСПИСАНИЕ ЗАНЯТИЙ И ЗАМЕЧАНИЯ</h3>
+                <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:20px;">
+                  <!-- Read-only Schedule list -->
+                  <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:12px; border:1px solid rgba(255,255,255,0.03);">
+                    <h4 style="font-size:0.75rem; color:var(--color-cyan); margin-bottom:8px; font-family:var(--font-display);">НЕДЕЛЬНОЕ РАСПИСАНИЕ:</h4>
+                    <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:6px; font-size:0.75rem; color:#bfbdd3;" id="monitoring-child-schedule-ul">
+                      <li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid rgba(255,255,255,0.02);"><span>ПОНЕДЕЛЬНИК 14:00</span><strong>📐 Линейные уравнения (Лекция & Тест)</strong></li>
+                      <li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid rgba(255,255,255,0.02);"><span>СРЕДА 15:30</span><strong>⚡ Законы Ньютона (Интерактивный стенд)</strong></li>
+                      <li style="display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid rgba(255,255,255,0.02);"><span>ПЯТНИЦА 16:00</span><strong>💻 Двоичная система (Flight Simulator Practice)</strong></li>
+                    </ul>
+                  </div>
+                  <!-- Comments/Remarks log -->
+                  <div style="background:rgba(0,0,0,0.2); border-radius:6px; padding:12px; border:1px solid rgba(255,255,255,0.03);">
+                    <h4 style="font-size:0.75rem; color:var(--color-pink); margin-bottom:8px; font-family:var(--font-display);">МЕТОДИЧЕСКИЕ ЗАМЕЧАНИЯ:</h4>
+                    <div id="monitoring-child-comments" style="display:flex; flex-direction:column; gap:6px; font-size:0.75rem; color:#bfbdd3; max-height:120px; overflow-y:auto;">
+                      <div style="padding:6px; background:rgba(255,0,127,0.05); border-left:2px solid var(--color-pink); border-radius:2px;">
+                        <strong>Инструктор Командор Вейн:</strong> Отличные показатели реакции в космо-симуляторе (350 мс), точность стрельбы по верным ответам повысилась.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- FUTURISTIC SCROLL ELEVATOR WIDGET (ON THE RIGHT) -->
+  <div id="scroll-elevator">
+    <button id="btn-scroll-up" class="elevator-btn" title="Вверх">▲</button>
+    <div class="elevator-slider-track">
+      <div id="elevator-slider-handle" class="elevator-handle">
+        <span class="handle-dots">⁝</span>
+      </div>
+    </div>
+    <button id="btn-scroll-down" class="elevator-btn" title="Вниз">▼</button>
+  </div>
+
+  <!-- AUTHORIZATION OVERLAY -->
+  <div id="auth-overlay" class="auth-overlay-container">
+    <div class="auth-card glass-panel">
+      <div class="auth-logo-area" style="text-align:center; margin-bottom:20px;">
+        <svg viewBox="0 0 100 100" width="60" height="60" class="logo-icon" style="margin-bottom:10px;">
+          <polygon points="50,5 64,36 98,36 70,57 81,91 50,70 19,91 30,57 2,36 36,36" fill="#00f3ff" filter="drop-shadow(0 0 8px rgba(0, 243, 255, 0.6))" />
+        </svg>
+        <h1 style="font-family:'Orbitron', sans-serif; font-size:1.8rem; margin:0; letter-spacing:2px; font-weight:900;">STAR <span class="highlight" style="color:var(--color-pink); text-shadow: 0 0 10px var(--color-pink-glow);">ACADEMY</span></h1>
+        <p class="subtitle" style="font-size:0.75rem; color:#8e8ab3; margin-top:5px; text-transform:uppercase; letter-spacing:1px;">Cybernetic STEM Portal // Вход в систему</p>
+      </div>
+
+      <!-- Tab Selectors: Login or Register -->
+      <div class="auth-tabs" style="display:flex; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.08);">
+        <button id="auth-tab-login" class="auth-tab-btn active" style="flex:1; padding:10px; background:none; border:none; border-bottom:2px solid var(--color-cyan); color:#fff; font-family:'Orbitron', sans-serif; font-size:0.85rem; font-weight:bold; cursor:pointer;">ВХОД</button>
+        <button id="auth-tab-register" class="auth-tab-btn" style="flex:1; padding:10px; background:none; border:none; border-bottom:2px solid transparent; color:#8e8ab3; font-family:'Orbitron', sans-serif; font-size:0.85rem; font-weight:bold; cursor:pointer;">РЕГИСТРАЦИЯ</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="auth-login-form" class="auth-form" style="display:flex; flex-direction:column; gap:12px;">
+        <div class="input-group">
+          <label for="login-email" style="font-size:0.7rem; color:#8e8ab3; margin-bottom:4px; display:block;">EMAIL / GMAIL:</label>
+          <input type="email" id="login-email" required placeholder="name@domain.com" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; box-sizing:border-box;">
+        </div>
+        <div class="input-group">
+          <label for="login-password" style="font-size:0.7rem; color:#8e8ab3; margin-bottom:4px; display:block;">ПАРОЛЬ:</label>
+          <input type="password" id="login-password" required placeholder="••••••••" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; box-sizing:border-box;">
+        </div>
+        <button type="submit" class="btn primary-btn pulse-glow auth-submit-btn" style="width:100%; padding:12px; margin-top:10px; font-weight:bold;">ВОЙТИ В КАБИНУ</button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="auth-register-form" class="auth-form hidden" style="display:none; flex-direction:column; gap:12px;">
+        <div class="input-group">
+          <label for="register-name" style="font-size:0.7rem; color:#8e8ab3; margin-bottom:4px; display:block;">ПОЛНОЕ ИМЯ:</label>
+          <input type="text" id="register-name" required placeholder="Имя Фамилия" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; box-sizing:border-box;">
+        </div>
+        <div class="input-group">
+          <label for="register-email" style="font-size:0.7rem; color:#8e8ab3; margin-bottom:4px; display:block;">EMAIL / GMAIL:</label>
+          <input type="email" id="register-email" required placeholder="name@domain.com" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; box-sizing:border-box;">
+        </div>
+        <div class="input-group">
+          <label for="register-password" style="font-size:0.7rem; color:#8e8ab3; margin-bottom:4px; display:block;">ПАРОЛЬ:</label>
+          <input type="password" id="register-password" required placeholder="Минимум 6 символов" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; box-sizing:border-box;">
+        </div>
+        <div class="input-group">
+          <label for="register-role" style="font-size:0.7rem; color:#8e8ab3; margin-bottom:4px; display:block;">ВЫБЕРИТЕ РОЛЬ:</label>
+          <select id="register-role" required class="auth-select" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; box-sizing:border-box;">
+            <option value="student">Ученик (Курсант)</option>
+            <option value="teacher">Учитель (Инструктор)</option>
+            <option value="parent">Родитель (Наблюдатель)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn primary-btn pulse-glow auth-submit-btn" style="width:100%; padding:12px; margin-top:10px; font-weight:bold;">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+      </form>
+      
+      <!-- Guest login (offline mode fallback) -->
+      <div class="auth-fallback-area" style="margin-top:15px; border-top:1px dashed rgba(255,255,255,0.08); padding-top:15px; text-align:center;">
+        <button id="btn-auth-guest" class="btn secondary-btn" style="width:100%; padding:8px; font-size:0.75rem;">ВОЙТИ КАК ГОСТЬ (АВТОНОМНО)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Popup Container -->
+  <div id="toast-notification" class="hidden">Оценка успешно обновлена!</div>
+
+  <!-- Javascript Modules -->
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
