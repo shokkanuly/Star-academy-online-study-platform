@@ -56,10 +56,10 @@ Star Academy brings learning to life through a beautiful sci-fi cybernetic inter
 
 ### Prerequisites
 
-You need Python 3 installed on your system. Install Flask and its CORS extensions:
+You need Python 3 installed on your system. Install the required dependencies using the provided `requirements.txt`:
 
 ```bash
-pip install Flask flask-cors
+pip install -r requirements.txt
 ```
 
 ### Running the App
