@@ -2250,6 +2250,229 @@ input[type="range"]::-webkit-slider-thumb {
   }
 }
 
+@media (max-width: 768px) {
+  /* Prevent horizontal scrolling and expand layout to edge */
+  body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  #app-wrapper {
+    width: 100%;
+    max-width: 100vw;
+    padding: 10px 15px;
+    height: auto;
+    min-height: 100vh;
+    gap: 15px;
+  }
+
+  /* Header adjustments: stack vertically */
+  .main-header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .logo-area {
+    justify-content: center;
+  }
+
+  .logo-text {
+    font-size: 1.15rem;
+  }
+
+  .navigation-tabs {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    flex-grow: 1;
+    text-align: center;
+  }
+
+  /* Right header options alignment */
+  .main-header > div:last-child {
+    margin-left: 0 !important;
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .user-role-badge {
+    padding: 6px 12px;
+    font-size: 0.7rem;
+  }
+
+  /* Custom Scroll elevator sidebar - hide on mobile since it takes up width */
+  #scroll-elevator {
+    display: none !important;
+  }
+
+  /* Increase button/input tap targets */
+  .btn, button, input[type="text"], input[type="email"], input[type="password"], select, textarea {
+    padding: 14px 18px !important;
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    min-height: 48px; /* High-contrast brutalist tap target size */
+  }
+
+  /* Make sure checkbox labels have larger tap target */
+  .check-container {
+    padding: 10px 0;
+    font-size: 0.85rem !important;
+  }
+
+  /* Decrease large font sizes */
+  h1, .text-glow-cyan, .text-glow-pink,
+  .subjects-accordion-container h2,
+  .notes-container h2,
+  .test-stage-header h2,
+  .results-board h2,
+  .setup-panel h2,
+  .gradebook-header h2 {
+    font-size: 1.35rem !important;
+    letter-spacing: 1px !important;
+    text-align: center;
+  }
+
+  .subtitle-text, .subtitle-desc, .desc-shop, .desc-text {
+    font-size: 0.78rem !important;
+    text-align: center;
+  }
+
+  /* General Grid column resets to single columns */
+  .hangar-grid-upgraded,
+  .study-layout,
+  .analytics-dashboard-grid,
+  .setup-controls-grid,
+  .flight-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
+
+  /* Profile card meta layout stack */
+  .profile-meta {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 10px;
+  }
+
+  .profile-details-upgraded {
+    align-items: center;
+    width: 100%;
+  }
+
+  .xp-container {
+    width: 100%;
+  }
+
+  .role-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  /* Shop card vertical layout */
+  .shop-item-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .shop-item-card h4 {
+    font-size: 0.85rem;
+  }
+
+  .item-desc {
+    max-width: 100% !important;
+    margin: 5px 0;
+  }
+
+  /* Leaderboard responsive sizing */
+  .leaderboard-header-row,
+  .leaderboard-row-entry {
+    grid-template-columns: 40px 1fr 65px 75px !important;
+    font-size: 0.68rem !important;
+    padding: 10px 6px !important;
+  }
+
+  /* Study views stages */
+  #study-stage-content {
+    padding: 15px;
+  }
+
+  /* Quizzes and tests */
+  .test-answers-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .test-option {
+    padding: 12px !important;
+  }
+
+  /* Parent Monitoring dashboard child stats grid */
+  .child-stats-summary {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Simulator Setup layout */
+  .ship-selector-inline {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .mini-ship-card {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Accessibility rows */
+  .acc-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    text-align: center;
+  }
+
+  /* Active game HUD adjustments */
+  #hud {
+    padding: 10px !important;
+  }
+
+  .hud-top {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 10px !important;
+  }
+
+  /* Game Canvas viewport layout */
+  #game-canvas-container {
+    border-radius: 8px !important;
+  }
+
+  #game-canvas {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 10 / 7 !important;
+  }
+
+  /* Question builder constructor */
+  .question-builder-card .options-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* --- MULTI-USER SYSTEM & AUTHORIZATION OVERLAY STYLES --- */
 .auth-overlay-container {
   position: fixed;
