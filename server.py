@@ -23,10 +23,78 @@ def serve_static(path):
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'star_academy.db')
 
+# Check if PostgreSQL database is configured (e.g., via environment variables in production)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+IS_POSTGRES = False
+if DATABASE_URL and (DATABASE_URL.startswith('postgres://') or DATABASE_URL.startswith('postgresql://')):
+    IS_POSTGRES = True
+
+try:
+    import psycopg2
+    import psycopg2.extras
+    HAS_PSYCOPG2 = True
+except ImportError:
+    HAS_PSYCOPG2 = False
+
+class PostgresCursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def execute(self, query, params=None):
+        # 1. Translate INTEGER PRIMARY KEY AUTOINCREMENT -> SERIAL PRIMARY KEY for schema definitions
+        query_translated = query.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+        # 2. Translate SQLite placeholders (?) -> PostgreSQL placeholders (%s)
+        query_translated = query_translated.replace("?", "%s")
+        
+        if params is not None:
+            self.cursor.execute(query_translated, params)
+        else:
+            self.cursor.execute(query_translated)
+
+    def fetchone(self):
+        return self.cursor.fetchone()
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+
+    def close(self):
+        self.cursor.close()
+
+    def __getattr__(self, name):
+        return getattr(self.cursor, name)
+
+class PostgresConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def cursor(self):
+        real_cursor = self.conn.cursor()
+        return PostgresCursorWrapper(real_cursor)
+
+    def commit(self):
+        self.conn.commit()
+
+    def rollback(self):
+        self.conn.rollback()
+
+    def close(self):
+        self.conn.close()
+
+    def __getattr__(self, name):
+        return getattr(self.conn, name)
+
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if IS_POSTGRES and HAS_PSYCOPG2:
+        # Render and Heroku sometimes pass postgres:// URLs, but modern psycopg2 needs postgresql://.
+        url = DATABASE_URL
+        if url.startswith('postgres://'):
+            url = url.replace('postgres://', 'postgresql://', 1)
+        conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.DictCursor)
+        return PostgresConnectionWrapper(conn)
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def init_db():
     conn = get_db_connection()
@@ -129,7 +197,10 @@ def init_db():
     
     conn.commit()
     conn.close()
-    print("=== SQLite Database Initialized Successfully ===")
+    if IS_POSTGRES and HAS_PSYCOPG2:
+        print("=== PostgreSQL Database Initialized Successfully ===")
+    else:
+        print("=== SQLite Database Initialized Successfully ===")
 
 # --- 1. USER AUTHENTICATION ---
 
@@ -639,4 +710,4 @@ def get_student_progress():
 if __name__ == '__main__':
     init_db()
     print("=== Star Academy backend server running on port 5005 ===")
-    app.run(host='127.0.0.1', port=5005, debug=True)
+    app.run(host='0.0.0.0', port=5005, debug=True)

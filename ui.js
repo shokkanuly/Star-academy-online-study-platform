@@ -78,7 +78,7 @@ class UIController {
   // --- API SERVICE CONNECTORS ---
 
   async apiCall(endpoint, method = 'GET', body = null) {
-    const url = `http://localhost:5005${endpoint}`;
+    const url = endpoint;
     try {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), 2000); // 2 second timeout

@@ -64,13 +64,19 @@ pip install -r requirements.txt
 
 ### Running the App
 
-1. Start the Flask server:
+#### Development Server
+1. Start the Flask server in development mode:
    ```bash
    python server.py
    ```
 2. The server runs locally on port `5005` by default and initializes the database (`star_academy.db`).
-3. Open your browser and navigate to:
-   [http://127.0.0.1:5005](http://127.0.0.1:5005)
+3. Open your browser and navigate to [http://127.0.0.1:5005](http://127.0.0.1:5005) (or `http://<your-mac-local-ip>:5005` to access from your mobile phone).
+
+#### Production Server (Gunicorn)
+To run the server in a production-ready environment using Gunicorn:
+```bash
+gunicorn -w 4 -b 0.0.0.0:5005 server:app
+```
 
 ---
 
