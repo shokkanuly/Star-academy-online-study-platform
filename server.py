@@ -706,6 +706,7 @@ def get_student_progress():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+init_db()
 
 if __name__ == '__main__':
     init_db()
