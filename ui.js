@@ -61,13 +61,38 @@ class UIController {
     // Instantiate game engine
     this.game = new GameEngine('game-canvas');
 
+    // Initialize Theme
+    this.currentTheme = localStorage.getItem('star_theme') || 'cyber-neon';
+    document.body.setAttribute('data-theme', this.currentTheme);
+
+    // Initialize Accessibility Styles
+    const highContrast = localStorage.getItem('star_high_contrast') === 'true';
+    document.body.classList.toggle('high-contrast', highContrast);
+    const fontScale = localStorage.getItem('star_font_scale') || 'normal';
+    document.body.classList.remove('font-scale-small', 'font-scale-normal', 'font-scale-large');
+    document.body.classList.add(`font-scale-${fontScale}`);
+
+    // Initialize procedural volumes from cache on startup
+    const cachedMasterVol = localStorage.getItem('star_volume_master') || '70';
+    const cachedMusicVol = localStorage.getItem('star_volume_music') || '60';
+    gameAudio.setMasterVolume(parseFloat(cachedMasterVol) / 100);
+    gameAudio.setMusicVolume(parseFloat(cachedMusicVol) / 100);
+
     // Load session and state
     this.initSession().then(() => {
       this.initListeners();
-      this.switchTab('hangar');
+      
+      // Auto-determine starting tab based on role
+      const startTabs = { student: 'hangar', teacher: 'teacher-hangar', parent: 'parent-hangar', admin: 'admin-dashboard' };
+      this.switchTab(startTabs[this.userRole] || 'hangar');
+
       this.renderStudyStageContent();
       this.updateLeaderboardUI();
       this.updateShopUI();
+      
+      // Send initial heartbeat and start ping cycle
+      this.pingHeartbeat();
+      setInterval(() => this.pingHeartbeat(), 30000);
     });
 
     window.onGameOver = (score, wave, shards, accuracy, solvedCount, avgSpeed) => {
@@ -117,6 +142,7 @@ class UIController {
         this.unlockedItems = u.unlocked_items || ['flame_pink'];
         this.activeFlame = u.active_flame || 'flame_pink';
         this.activeShield = u.active_shield || 'cyan';
+        this.avatar = u.avatar || '🎓';
       } catch (e) {
         console.warn("Failed to parse cached session:", e);
       }
@@ -138,6 +164,7 @@ class UIController {
     this.unlockedItems = user.unlocked_items;
     this.activeFlame = user.active_flame;
     this.activeShield = user.active_shield;
+    this.avatar = user.avatar || '🎓';
     
     this.updateRankTitle();
     // Save to localStorage — role is baked in from server
@@ -261,17 +288,64 @@ class UIController {
       this.updateProfileCard();
       this.updateLeaderboardUI();
       this.updateShopUI();
+    } else if (tabId === 'admin-dashboard') {
+      await this.loadAdminDashboard();
+    } else if (tabId === 'settings') {
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme') === this.currentTheme);
+      });
+      // Populate profile details
+      const fullnameInput = document.getElementById('settings-fullname');
+      if (fullnameInput) fullnameInput.value = this.fullName || '';
+      const avatarSelect = document.getElementById('settings-avatar');
+      if (avatarSelect) avatarSelect.value = this.avatar || '🎓';
+      const passwordInput = document.getElementById('settings-password');
+      if (passwordInput) passwordInput.value = '';
+
+      // Sync simulator config UI
+      const diff = localStorage.getItem('star_difficulty') || 'easy';
+      document.querySelectorAll('[id^="btn-difficulty-"]').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `btn-difficulty-${diff}`);
+      });
+      const controls = localStorage.getItem('star_controls') || 'wasd';
+      document.querySelectorAll('[id^="btn-controls-"]').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `btn-controls-${controls}`);
+      });
+
+      // Volume sliders
+      const masterVol = localStorage.getItem('star_volume_master') || '70';
+      const musicVol = localStorage.getItem('star_volume_music') || '60';
+      const masterSlider = document.getElementById('settings-volume-master');
+      const musicSlider = document.getElementById('settings-volume-music');
+      if (masterSlider) {
+        masterSlider.value = masterVol;
+        const masterValText = document.getElementById('settings-val-volume-master');
+        if (masterValText) masterValText.innerText = `${masterVol}%`;
+      }
+      if (musicSlider) {
+        musicSlider.value = musicVol;
+        const musicValText = document.getElementById('settings-val-volume-music');
+        if (musicValText) musicValText.innerText = `${musicVol}%`;
+      }
+
+      // Accessibility Toggles UI
+      const highContrast = localStorage.getItem('star_high_contrast') === 'true';
+      const fontScale = localStorage.getItem('star_font_scale') || 'normal';
+      const hcCheckbox = document.getElementById('accessibility-high-contrast');
+      if (hcCheckbox) hcCheckbox.checked = highContrast;
+      const fsSelect = document.getElementById('accessibility-font-scale');
+      if (fsSelect) fsSelect.value = fontScale;
     }
   }
 
   switchRole(role) {
     this.userRole = role;
-    const labelMap = { student: 'СТУДЕНТ', teacher: 'ИНСТРУКТОР', parent: 'РОДИТЕЛЬ' };
+    const labelMap = { student: 'СТУДЕНТ', teacher: 'ИНСТРУКТОР', parent: 'РОДИТЕЛЬ', admin: 'АДМИНИСТРАТОР' };
     
     // Set body attribute — CSS uses body[data-role] to show/hide tabs
     document.body.setAttribute('data-role', role);
     
-    document.getElementById('header-role-text').innerText = `${labelMap[role]} // УР. ${this.level}`;
+    document.getElementById('header-role-text').innerText = `${labelMap[role] || 'ПОЛЬЗОВАТЕЛЬ'} // УР. ${this.level}`;
     this.updateProfileCard();
 
     // Keep legacy feature-view toggles (for hangar card panel)
@@ -290,13 +364,14 @@ class UIController {
     });
 
     // Navigate to the role's default tab
-    const defaultTabs = { student: 'hangar', teacher: 'teacher-hangar', parent: 'parent-hangar' };
-    this.switchTab(defaultTabs[role]);
+    const defaultTabs = { student: 'hangar', teacher: 'teacher-hangar', parent: 'parent-hangar', admin: 'admin-dashboard' };
+    this.switchTab(defaultTabs[role] || 'hangar');
 
     // Load role-specific data
     if (role === 'teacher') this.loadTeacherCoursesTab();
     if (role === 'parent') this.loadParentChildrenTab();
     if (role === 'student') this.loadStudentCourses();
+    if (role === 'admin') this.loadAdminDashboard();
   }
 
 
@@ -304,6 +379,8 @@ class UIController {
     document.getElementById('profile-shards').innerText = this.shards;
     document.getElementById('profile-rank-badge').innerText = `ЗВАНИЕ: ${this.rankTitle}`;
     document.getElementById('profile-name').innerText = this.fullName || "Пилот Академии";
+    const avatarEmojiEl = document.getElementById('profile-avatar-emoji');
+    if (avatarEmojiEl) avatarEmojiEl.innerText = this.avatar || '🎓';
     
     const thresh = 100 * this.level;
     document.getElementById('lbl-rank-title').innerText = `${this.rankTitle} // УР. ${this.level}`;
@@ -1424,6 +1501,30 @@ class UIController {
 
     // Sign Up API Connection
     if (formRegister) {
+      // Manage role selection visibility based on email
+      const registerEmailInput = document.getElementById('register-email');
+      const registerRoleSelect = document.getElementById('register-role');
+      if (registerEmailInput && registerRoleSelect) {
+        const toggleAdminOption = () => {
+          const emailVal = registerEmailInput.value.trim().toLowerCase();
+          const adminOption = registerRoleSelect.querySelector('option[value="admin"]');
+          if (adminOption) {
+            if (emailVal === 'aibek11@gmail.com') {
+              adminOption.style.display = '';
+              adminOption.disabled = false;
+            } else {
+              adminOption.style.display = 'none';
+              adminOption.disabled = true;
+              if (registerRoleSelect.value === 'admin') {
+                registerRoleSelect.value = 'student';
+              }
+            }
+          }
+        };
+        registerEmailInput.addEventListener('input', toggleAdminOption);
+        toggleAdminOption();
+      }
+
       formRegister.addEventListener('submit', async (e) => {
         e.preventDefault();
         const full_name = document.getElementById('register-name').value;
@@ -1433,6 +1534,12 @@ class UIController {
 
         if (password.length < 6) {
           alert("Пароль должен содержать не менее 6 символов");
+          return;
+        }
+
+        if (role === 'admin' && email.trim().toLowerCase() !== 'aibek11@gmail.com') {
+          gameAudio.playWrongSound();
+          alert("Регистрация администратора запрещена для данного email");
           return;
         }
 
@@ -1844,27 +1951,63 @@ class UIController {
     // Master volume sliders
     const masterVol = document.getElementById('volume-master');
     const masterVal = document.getElementById('val-volume-master');
-    masterVol.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value, 10);
-      masterVal.innerText = `${val}%`;
-      gameAudio.setVolume('master', val / 100);
-    });
+    const settingsMasterVol = document.getElementById('settings-volume-master');
+    const settingsMasterVal = document.getElementById('settings-val-volume-master');
+
+    const updateMasterVolume = (val) => {
+      localStorage.setItem('star_volume_master', val);
+      if (masterVol) masterVol.value = val;
+      if (masterVal) masterVal.innerText = `${val}%`;
+      if (settingsMasterVol) settingsMasterVol.value = val;
+      if (settingsMasterVal) settingsMasterVal.innerText = `${val}%`;
+      gameAudio.setMasterVolume(val / 100);
+    };
+
+    if (masterVol) {
+      masterVol.addEventListener('input', (e) => {
+        updateMasterVolume(parseInt(e.target.value, 10));
+      });
+    }
+    if (settingsMasterVol) {
+      settingsMasterVol.addEventListener('input', (e) => {
+        updateMasterVolume(parseInt(e.target.value, 10));
+      });
+    }
 
     const musicVol = document.getElementById('volume-music');
     const musicVal = document.getElementById('val-volume-music');
-    musicVol.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value, 10);
-      musicVal.innerText = `${val}%`;
-      gameAudio.setVolume('music', val / 100);
-    });
+    const settingsMusicVol = document.getElementById('settings-volume-music');
+    const settingsMusicVal = document.getElementById('settings-val-volume-music');
+
+    const updateMusicVolume = (val) => {
+      localStorage.setItem('star_volume_music', val);
+      if (musicVol) musicVol.value = val;
+      if (musicVal) musicVal.innerText = `${val}%`;
+      if (settingsMusicVol) settingsMusicVol.value = val;
+      if (settingsMusicVal) settingsMusicVal.innerText = `${val}%`;
+      gameAudio.setMusicVolume(val / 100);
+    };
+
+    if (musicVol) {
+      musicVol.addEventListener('input', (e) => {
+        updateMusicVolume(parseInt(e.target.value, 10));
+      });
+    }
+    if (settingsMusicVol) {
+      settingsMusicVol.addEventListener('input', (e) => {
+        updateMusicVolume(parseInt(e.target.value, 10));
+      });
+    }
 
     const sfxVol = document.getElementById('volume-sfx');
     const sfxVal = document.getElementById('val-volume-sfx');
-    sfxVol.addEventListener('input', (e) => {
-      const val = parseInt(e.target.value, 10);
-      sfxVal.innerText = `${val}%`;
-      gameAudio.setVolume('sfx', val / 100);
-    });
+    if (sfxVol) {
+      sfxVol.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (sfxVal) sfxVal.innerText = `${val}%`;
+        gameAudio.setSfxVolume(val / 100);
+      });
+    }
 
     // Download PDF Report
     document.getElementById('btn-generate-report').addEventListener('click', () => {
@@ -2031,6 +2174,261 @@ class UIController {
         } else {
           document.getElementById('parent-monitoring-no-child-placeholder')?.classList.remove('hidden');
           document.getElementById('parent-monitoring-container')?.classList.add('hidden');
+        }
+      });
+    }
+
+    // ============================================================
+    // THEME SELECTOR ACTIONS
+    // ============================================================
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.getAttribute('data-theme');
+        this.currentTheme = theme;
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('star_theme', theme);
+        
+        document.querySelectorAll('.theme-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-theme') === theme);
+        });
+        
+        gameAudio.playLaserSound(1.2);
+        this.showToast(`Режим дизайна изменен на: ${theme.toUpperCase()}`);
+      });
+    });
+
+    const toggleThemeBtn = document.getElementById('btn-toggle-theme');
+    if (toggleThemeBtn) {
+      toggleThemeBtn.addEventListener('click', () => {
+        const themes = ['cyber-neon', 'cyber-minimalist', 'neo-brutalist', 'mini-minimalist'];
+        const currentIdx = themes.indexOf(this.currentTheme);
+        const nextTheme = themes[(currentIdx + 1) % themes.length];
+        
+        this.currentTheme = nextTheme;
+        document.body.setAttribute('data-theme', nextTheme);
+        localStorage.setItem('star_theme', nextTheme);
+        
+        // Sync active class on Settings theme buttons
+        document.querySelectorAll('.theme-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-theme') === nextTheme);
+        });
+        
+        gameAudio.playLaserSound(1.2);
+        this.showToast(`Режим дизайна изменен на: ${nextTheme.toUpperCase()}`);
+      });
+    }
+
+    // ============================================================
+    // SUPPORT FORM ACTIONS
+    // ============================================================
+    const supportForm = document.getElementById('support-form');
+    if (supportForm) {
+      supportForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const subject = document.getElementById('support-subject').value.trim();
+        const message = document.getElementById('support-message').value.trim();
+        
+        if (!subject || !message) {
+          alert("Заполните все поля обращения");
+          return;
+        }
+        
+        const email = this.email || 'anonymous@staracademy.edu';
+        const res = await this.apiCall('/api/support/send', 'POST', {
+          user_id: this.userId,
+          email,
+          subject,
+          message
+        });
+        
+        if (res && res.status === 'success') {
+          this.showToast("Обращение успешно отправлено!");
+          document.getElementById('support-subject').value = "";
+          document.getElementById('support-message').value = "";
+          gameAudio.playUpgradeSound();
+        } else {
+          alert("Не удалось отправить обращение. Проверьте соединение.");
+        }
+      });
+    }
+
+    // ============================================================
+    // QUANTUM MULTIPLIER SPIN ACTIONS
+    // ============================================================
+    const btnSpinQuantum = document.getElementById('btn-spin-quantum');
+    if (btnSpinQuantum) {
+      btnSpinQuantum.addEventListener('click', () => this.evaluateQuantumBet());
+    }
+
+    // ============================================================
+    // SETTINGS CONTROL PANEL HANDLERS
+    // ============================================================
+
+    // Profile Edit Settings Submit
+    const profileForm = document.getElementById('settings-profile-form');
+    if (profileForm) {
+      profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const full_name = document.getElementById('settings-fullname').value.trim();
+        const avatar = document.getElementById('settings-avatar').value;
+        const password = document.getElementById('settings-password').value;
+
+        if (!full_name) {
+          alert("Полное имя обязательно!");
+          return;
+        }
+
+        const res = await this.apiCall('/api/profile/edit', 'POST', {
+          user_id: this.userId,
+          full_name,
+          avatar,
+          password: password || null
+        });
+
+        if (res && res.status === 'success') {
+          this.fullName = full_name;
+          this.avatar = avatar;
+
+          const cached = JSON.parse(localStorage.getItem('star_user_session') || '{}');
+          cached.full_name = full_name;
+          cached.avatar = avatar;
+          localStorage.setItem('star_user_session', JSON.stringify(cached));
+
+          this.updateHeaderSessionUI();
+          this.updateProfileCard();
+
+          document.getElementById('settings-password').value = '';
+          gameAudio.playUpgradeSound();
+          this.showToast("Профиль успешно сохранен!");
+        } else {
+          gameAudio.playWrongSound();
+          alert(res ? res.message : "Не удалось сохранить профиль.");
+        }
+      });
+    }
+
+    // Difficulty Selectors
+    ['easy', 'medium', 'hard'].forEach(diff => {
+      const btn = document.getElementById(`btn-difficulty-${diff}`);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          localStorage.setItem('star_difficulty', diff);
+          document.querySelectorAll('[id^="btn-difficulty-"]').forEach(b => {
+            b.classList.toggle('active', b.id === `btn-difficulty-${diff}`);
+          });
+          gameAudio.playLaserSound(1.1);
+          this.showToast(`Сложность установлена: ${diff.toUpperCase()}`);
+        });
+      }
+    });
+
+    // Control Selectors
+    ['wasd', 'arrows'].forEach(scheme => {
+      const btn = document.getElementById(`btn-controls-${scheme}`);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          localStorage.setItem('star_controls', scheme);
+          document.querySelectorAll('[id^="btn-controls-"]').forEach(b => {
+            b.classList.toggle('active', b.id === `btn-controls-${scheme}`);
+          });
+          gameAudio.playLaserSound(1.1);
+          this.showToast(`Управление установлено: ${scheme === 'wasd' ? 'W/A/S/D' : 'Стрелки'}`);
+        });
+      }
+    });
+
+    // Accessibility Contrast Checkbox
+    const hcCheckbox = document.getElementById('accessibility-high-contrast');
+    if (hcCheckbox) {
+      hcCheckbox.addEventListener('change', (e) => {
+        const active = e.target.checked;
+        document.body.classList.toggle('high-contrast', active);
+        localStorage.setItem('star_high_contrast', active);
+        this.showToast(`Контрастный режим: ${active ? 'ВКЛ' : 'ВЫКЛ'}`);
+      });
+    }
+
+    // Accessibility Font Scale Selector
+    const fsSelect = document.getElementById('accessibility-font-scale');
+    if (fsSelect) {
+      fsSelect.addEventListener('change', (e) => {
+        const scale = e.target.value;
+        document.body.classList.remove('font-scale-small', 'font-scale-normal', 'font-scale-large');
+        document.body.classList.add(`font-scale-${scale}`);
+        localStorage.setItem('star_font_scale', scale);
+        this.showToast(`Масштаб шрифта: ${scale.toUpperCase()}`);
+      });
+    }
+
+    // Danger Zone: Reset Progress Button
+    const btnReset = document.getElementById('btn-danger-reset');
+    if (btnReset) {
+      btnReset.addEventListener('click', async () => {
+        const confirmed = confirm("Вы уверены, что хотите сбросить весь прогресс (XP, уровень, shards, highscores) без возможности восстановления?");
+        if (!confirmed) return;
+
+        const res = await this.apiCall('/api/profile/reset', 'POST', { user_id: this.userId });
+        if (res && res.status === 'success') {
+          this.xp = 0;
+          this.level = 1;
+          this.shards = 0;
+          this.highscore = 0;
+          this.unlockedItems = ['flame_pink'];
+          this.activeFlame = 'flame_pink';
+          this.activeShield = 'cyan';
+
+          const cached = JSON.parse(localStorage.getItem('star_user_session') || '{}');
+          cached.xp = 0;
+          cached.level = 1;
+          cached.shards = 0;
+          cached.highscore = 0;
+          cached.unlocked_items = ['flame_pink'];
+          cached.active_flame = 'flame_pink';
+          cached.active_shield = 'cyan';
+          localStorage.setItem('star_user_session', JSON.stringify(cached));
+
+          this.updateRankTitle();
+          this.updateProfileCard();
+
+          gameAudio.playUpgradeSound();
+          alert("Ваш прогресс был успешно сброшен!");
+        } else {
+          gameAudio.playWrongSound();
+          alert("Не удалось сбросить прогресс.");
+        }
+      });
+    }
+
+    // Danger Zone: Delete Account Button
+    const btnDelete = document.getElementById('btn-danger-delete');
+    if (btnDelete) {
+      btnDelete.addEventListener('click', async () => {
+        const nameConfirm = prompt("ВНИМАНИЕ! Вы собираетесь навсегда удалить свою учетную запись. Все ваши данные будут стерты без возможности восстановления.\n\nПожалуйста, введите ваше ПОЛНОЕ ИМЯ для подтверждения:");
+        if (!nameConfirm) return;
+
+        if (nameConfirm.trim() !== this.fullName) {
+          alert("Введенное имя не совпадает. Удаление отменено.");
+          return;
+        }
+
+        const res = await this.apiCall('/api/profile/delete', 'POST', { user_id: this.userId });
+        if (res && res.status === 'success') {
+          localStorage.removeItem('star_user_session');
+          this.userId = null;
+          this.fullName = '';
+          this.email = '';
+          this.userRole = 'student';
+          this.xp = 0;
+          this.level = 1;
+          this.shards = 0;
+          this.highscore = 0;
+
+          this.updateHeaderSessionUI();
+          alert("Ваш аккаунт был успешно удален.");
+          window.location.reload();
+        } else {
+          gameAudio.playWrongSound();
+          alert("Не удалось удалить аккаунт.");
         }
       });
     }
@@ -2436,6 +2834,503 @@ class UIController {
         radarContainer.appendChild(row);
       });
     }
+  }
+
+  // ============================================================
+  // ADMIN HEARTBEAT & STATS MONITORING
+  // ============================================================
+
+  async pingHeartbeat() {
+    if (this.userId) {
+      await this.apiCall('/api/ping', 'POST', { user_id: this.userId });
+    }
+  }
+
+  async evaluateQuantumBet() {
+    const betInput = document.getElementById('quantum-bet-amount');
+    const multSelect = document.getElementById('quantum-multiplier-select');
+    const resultText = document.getElementById('quantum-result-text');
+    const visualCore = document.getElementById('quantum-visual-core');
+    
+    if (!betInput || !multSelect || !resultText || !visualCore) return;
+    
+    const bet = parseInt(betInput.value, 10);
+    const multiplier = parseInt(multSelect.value, 10);
+    
+    if (isNaN(bet) || bet <= 0) {
+      alert("Введите корректную сумму ставки");
+      return;
+    }
+    if (bet > this.shards) {
+      alert("Недостаточно Космо-Шардов для депозита!");
+      return;
+    }
+    
+    // Disable spin button during spin
+    const btnSpin = document.getElementById('btn-spin-quantum');
+    if (btnSpin) {
+      btnSpin.disabled = true;
+      btnSpin.innerText = "РЕАКТОР СТАБИЛИЗИРУЕТСЯ...";
+    }
+    resultText.innerText = "Идет вычисление квантового состояния...";
+    resultText.style.color = '#bfbdd3';
+    
+    // Spin core animation faster
+    const svgEl = visualCore.querySelector('svg');
+    if (svgEl) {
+      svgEl.style.animation = 'spinSlow 0.4s linear infinite';
+    }
+    gameAudio.playLaserSound(0.9);
+    
+    setTimeout(async () => {
+      if (svgEl) svgEl.style.animation = '';
+      if (btnSpin) {
+        btnSpin.disabled = false;
+        btnSpin.innerText = "ИНИЦИИРОВАТЬ ДЕПОЗИТ";
+      }
+      
+      let winChance = 0.48; // x2
+      if (multiplier === 5) winChance = 0.18;
+      if (multiplier === 10) winChance = 0.08;
+      
+      const isWin = Math.random() < winChance;
+      if (isWin) {
+        const prize = bet * (multiplier - 1);
+        this.shards += prize;
+        resultText.innerText = `УСПЕХ! +${bet * multiplier} Шардов (Выигрыш: ${prize})`;
+        resultText.style.color = 'var(--color-green)';
+        gameAudio.playUpgradeSound();
+      } else {
+        this.shards -= bet;
+        resultText.innerText = `КВАНТОВЫЙ РАСПАД! Потеряно -${bet} Шардов`;
+        resultText.style.color = 'var(--color-pink)';
+        gameAudio.playWrongSound();
+      }
+      
+      this.updateProfileCard();
+      this.updateShopUI();
+      await this.syncProfileWithServer();
+    }, 1200);
+  }
+
+  async loadAdminDashboard() {
+    const res = await this.apiCall('/api/admin/stats');
+    if (!res || res.status !== 'success') {
+      console.warn("Could not load admin stats.");
+      return;
+    }
+    
+    const stats = res.stats;
+    const now = new Date();
+    let onlineCount = 0;
+    
+    stats.users.forEach(u => {
+      if (u.last_active_at) {
+        const lastActiveStr = u.last_active_at.replace(' ', 'T') + 'Z';
+        const lastActive = new Date(lastActiveStr);
+        const nowUTC = new Date(now.toUTCString());
+        const diffMs = Math.abs(nowUTC - lastActive);
+        
+        if (diffMs < 300000) { // 5 minutes
+          u.isOnline = true;
+          onlineCount++;
+        } else {
+          u.isOnline = false;
+        }
+      } else {
+        u.isOnline = false;
+      }
+    });
+    
+    // Update dashboard counters
+    const onlineEl = document.getElementById('admin-stat-online');
+    if (onlineEl) onlineEl.innerText = onlineCount;
+    
+    const tasksEl = document.getElementById('admin-stat-tasks');
+    if (tasksEl) tasksEl.innerText = stats.total_tasks || 0;
+    
+    const studentsEl = document.getElementById('admin-stat-students');
+    if (studentsEl) studentsEl.innerText = stats.role_stats.student || 0;
+    
+    const othersEl = document.getElementById('admin-stat-others');
+    if (othersEl) {
+      const teacherCount = stats.role_stats.teacher || 0;
+      const parentCount = stats.role_stats.parent || 0;
+      const adminCount = stats.role_stats.admin || 0;
+      othersEl.innerText = teacherCount + parentCount + adminCount;
+    }
+    
+    // Users table
+    const tbody = document.getElementById('admin-users-tbody');
+    if (tbody) {
+      tbody.innerHTML = "";
+      stats.users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+        
+        const statusIndicator = u.isOnline 
+          ? `<span style="display:inline-block; width:8px; height:8px; background:var(--color-green); border-radius:50%; margin-right:5px; box-shadow:0 0 6px var(--color-green);"></span> ОНЛАЙН`
+          : `<span style="display:inline-block; width:8px; height:8px; background:#686580; border-radius:50%; margin-right:5px;"></span> ОФФЛАЙН`;
+          
+        const roleLabel = { student: 'Ученик', teacher: 'Учитель', parent: 'Родитель', admin: 'Админ' }[u.role] || u.role;
+        
+        tr.innerHTML = `
+          <td style="padding: 10px; font-weight:bold; color:${u.isOnline ? 'var(--color-green)' : '#8e8ab3'};">${statusIndicator}</td>
+          <td style="padding: 10px; color:#fff; font-weight:bold;">${u.full_name}</td>
+          <td style="padding: 10px;">${u.email}</td>
+          <td style="padding: 10px; text-transform:uppercase;">${roleLabel}</td>
+          <td style="padding: 10px;">Ур. ${u.level}</td>
+          <td style="padding: 10px; font-weight:bold; color:var(--color-cyan);">${u.time_spent_mins || 0}</td>
+          <td style="padding: 10px; font-weight:bold; text-align:center;">${u.tasks_count}</td>
+          <td style="padding: 10px; color:var(--color-gold);">${u.highscore?.toLocaleString() || 0}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    
+    // Support messages
+    const supportList = document.getElementById('admin-support-list');
+    if (supportList) {
+      supportList.innerHTML = "";
+      if (stats.support_messages && stats.support_messages.length > 0) {
+        stats.support_messages.forEach(msg => {
+          const div = document.createElement('div');
+          div.style.background = "rgba(255,255,255,0.02)";
+          div.style.border = "1px solid rgba(255,255,255,0.06)";
+          div.style.borderRadius = "6px";
+          div.style.padding = "10px 12px";
+          div.style.display = "flex";
+          div.style.flexDirection = "column";
+          div.style.gap = "4px";
+          
+          const dateStr = new Date(msg.created_at).toLocaleString('ru-RU');
+          div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--color-pink); font-weight:bold;">
+              <span>${msg.email}</span>
+              <span style="color:#8e8ab3;">${dateStr}</span>
+            </div>
+            <strong style="font-size:0.8rem; color:#fff; margin-top:2px;">Тема: ${msg.subject}</strong>
+            <p style="font-size:0.75rem; color:#dbdaea; line-height:1.4; margin-top:2px; word-break:break-word;">${msg.message}</p>
+          `;
+          supportList.appendChild(div);
+        });
+      } else {
+        supportList.innerHTML = `<p style="color:#8e8ab3; font-style:italic; text-align:center; font-size:0.8rem; margin:auto;">Нет активных обращений в поддержку.</p>`;
+      }
+    }
+    
+    // Draw all 5 graphs
+    this.drawAdminGrowthChart(stats.registrations);
+    this.drawAdminUsageChart(stats.daily_usage);
+    this.drawAdminTimeChart(stats.daily_time);
+    this.drawAdminCoursesChart(stats.courses_stats);
+    this.drawAdminCorrelationChart(stats.users);
+    this.drawAdminRolesBreakdown(stats.role_stats);
+  }
+
+  createSVGNode(tag, attrs = {}, textContent = "") {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (let k in attrs) {
+      el.setAttribute(k, attrs[k]);
+    }
+    if (textContent) el.textContent = textContent;
+    return el;
+  }
+
+  drawAdminGrowthChart(registrations) {
+    const svg = document.getElementById('admin-growth-svg');
+    if (!svg) return;
+    svg.innerHTML = "";
+    
+    if (!registrations || registrations.length === 0) {
+      svg.appendChild(this.createSVGNode('text', { x: 160, y: 90, fill: '#8e8ab3', 'text-anchor': 'middle', 'font-size': '10' }, "Нет данных о росте"));
+      return;
+    }
+    
+    let cumulative = 0;
+    const dataPoints = registrations.map(r => {
+      cumulative += r.count;
+      return { date: r.date, val: cumulative };
+    });
+    
+    const minVal = 0;
+    const maxVal = Math.max(5, ...dataPoints.map(p => p.val)) * 1.15;
+    
+    const svgW = 320;
+    const svgH = 180;
+    const paddingLeft = 30;
+    const paddingRight = 15;
+    const paddingTop = 15;
+    const paddingBottom = 20;
+    
+    const chartW = svgW - paddingLeft - paddingRight;
+    const chartH = svgH - paddingTop - paddingBottom;
+    
+    // Grid Lines
+    const gridLines = 3;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = paddingTop + (chartH * i) / gridLines;
+      const lineVal = Math.round(maxVal - ((maxVal - minVal) * i) / gridLines);
+      svg.appendChild(this.createSVGNode('line', { x1: paddingLeft, y1: y, x2: svgW - paddingRight, y2: y, stroke: 'rgba(255,255,255,0.03)', 'stroke-dasharray': '2 4' }));
+      svg.appendChild(this.createSVGNode('text', { x: paddingLeft - 6, y: y + 3, fill: '#686580', 'font-size': '8', 'text-anchor': 'end' }, lineVal));
+    }
+    
+    const pointsCount = dataPoints.length;
+    const pointsStr = dataPoints.map((p, idx) => {
+      const x = paddingLeft + (chartW * idx) / Math.max(1, pointsCount - 1);
+      const y = paddingTop + chartH - ((p.val - minVal) / (maxVal - minVal)) * chartH;
+      return `${x},${y}`;
+    }).join(' ');
+    
+    // Area Gradient
+    const defs = this.createSVGNode('defs');
+    const gradient = this.createSVGNode('linearGradient', { id: 'areaGrad', x1: '0', y1: '0', x2: '0', y2: '1' });
+    gradient.appendChild(this.createSVGNode('stop', { offset: '0%', 'stop-color': 'var(--color-pink)', 'stop-opacity': '0.3' }));
+    gradient.appendChild(this.createSVGNode('stop', { offset: '100%', 'stop-color': 'var(--color-pink)', 'stop-opacity': '0' }));
+    defs.appendChild(gradient);
+    svg.appendChild(defs);
+    
+    const pathPoints = `${paddingLeft},${paddingTop + chartH} ${pointsStr} ${paddingLeft + chartW},${paddingTop + chartH}`;
+    svg.appendChild(this.createSVGNode('polygon', { points: pathPoints, fill: 'url(#areaGrad)' }));
+    svg.appendChild(this.createSVGNode('polyline', { points: pointsStr, fill: 'none', stroke: 'var(--color-pink)', 'stroke-width': '2', style: 'filter: drop-shadow(0 0 4px var(--color-pink-glow))' }));
+    
+    // Circles
+    dataPoints.forEach((p, idx) => {
+      const x = paddingLeft + (chartW * idx) / Math.max(1, pointsCount - 1);
+      const y = paddingTop + chartH - ((p.val - minVal) / (maxVal - minVal)) * chartH;
+      
+      const circle = this.createSVGNode('circle', { cx: x, cy: y, r: 3, fill: 'var(--color-cyan)', stroke: '#070313', 'stroke-width': '1' });
+      circle.appendChild(this.createSVGNode('title', {}, `Дата: ${p.date}, Всего: ${p.val}`));
+      svg.appendChild(circle);
+      
+      if (idx === 0 || idx === pointsCount - 1 || (pointsCount > 2 && idx === Math.floor(pointsCount / 2))) {
+        svg.appendChild(this.createSVGNode('text', { x: x, y: paddingTop + chartH + 12, fill: '#686580', 'font-size': '8', 'text-anchor': 'middle' }, p.date.substring(5)));
+      }
+    });
+  }
+
+  drawAdminUsageChart(dailyUsage) {
+    const svg = document.getElementById('admin-usage-svg');
+    if (!svg) return;
+    svg.innerHTML = "";
+    
+    if (!dailyUsage || dailyUsage.length === 0) {
+      svg.appendChild(this.createSVGNode('text', { x: 250, y: 100, fill: '#8e8ab3', 'text-anchor': 'middle', 'font-size': '12' }, "Нет данных об активности"));
+      return;
+    }
+    
+    const svgW = 500, svgH = 200, paddingLeft = 40, paddingRight = 20, paddingTop = 20, paddingBottom = 20;
+    const chartW = svgW - paddingLeft - paddingRight;
+    const chartH = svgH - paddingTop - paddingBottom;
+    
+    const vals = dailyUsage.map(d => d.count);
+    const maxVal = Math.max(10, ...vals) * 1.15;
+    const minVal = 0;
+    
+    const gridLines = 4;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = paddingTop + (chartH * i) / gridLines;
+      const val = Math.round(maxVal - ((maxVal - minVal) * i) / gridLines);
+      svg.appendChild(this.createSVGNode('line', { x1: paddingLeft, y1: y, x2: svgW - paddingRight, y2: y, stroke: 'rgba(255,255,255,0.03)', 'stroke-dasharray': '2 4' }));
+      svg.appendChild(this.createSVGNode('text', { x: paddingLeft - 8, y: y + 3, fill: '#686580', 'font-size': '8', 'text-anchor': 'end' }, val));
+    }
+    
+    const pointsCount = dailyUsage.length;
+    const points = dailyUsage.map((d, idx) => {
+      const x = paddingLeft + (chartW * idx) / Math.max(1, pointsCount - 1);
+      const y = paddingTop + chartH - ((d.count - minVal) / (maxVal - minVal)) * chartH;
+      return { x, y, date: d.date, count: d.count };
+    });
+    
+    const pointsStr = points.map(p => `${p.x},${p.y}`).join(' ');
+    
+    const defs = this.createSVGNode('defs');
+    const grad = this.createSVGNode('linearGradient', { id: 'usageGrad', x1: 0, y1: 0, x2: 0, y2: 1 });
+    grad.appendChild(this.createSVGNode('stop', { offset: '0%', 'stop-color': 'var(--color-cyan)', 'stop-opacity': 0.35 }));
+    grad.appendChild(this.createSVGNode('stop', { offset: '100%', 'stop-color': 'var(--color-cyan)', 'stop-opacity': 0.0 }));
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+    
+    if (pointsCount > 0) {
+      const pathPoints = `${paddingLeft},${paddingTop + chartH} ${pointsStr} ${paddingLeft + chartW},${paddingTop + chartH}`;
+      svg.appendChild(this.createSVGNode('polygon', { points: pathPoints, fill: 'url(#usageGrad)' }));
+    }
+    
+    svg.appendChild(this.createSVGNode('polyline', { points: pointsStr, fill: 'none', stroke: 'var(--color-cyan)', 'stroke-width': 2 }));
+    
+    points.forEach((p, idx) => {
+      const circle = this.createSVGNode('circle', { cx: p.x, cy: p.y, r: 4, fill: '#070313', stroke: 'var(--color-cyan)', 'stroke-width': 1.5 });
+      circle.appendChild(this.createSVGNode('title', {}, `${p.date}: ${p.count} действий`));
+      svg.appendChild(circle);
+      
+      if (idx === 0 || idx === pointsCount - 1 || (pointsCount > 2 && idx === Math.floor(pointsCount / 2))) {
+        svg.appendChild(this.createSVGNode('text', { x: p.x, y: paddingTop + chartH + 14, fill: '#686580', 'font-size': '8', 'text-anchor': 'middle' }, p.date.substring(5)));
+      }
+    });
+  }
+
+  drawAdminTimeChart(dailyTime) {
+    const svg = document.getElementById('admin-time-svg');
+    if (!svg) return;
+    svg.innerHTML = "";
+    
+    if (!dailyTime || dailyTime.length === 0) {
+      svg.appendChild(this.createSVGNode('text', { x: 250, y: 100, fill: '#8e8ab3', 'text-anchor': 'middle', 'font-size': '12' }, "Нет данных о времени сессий"));
+      return;
+    }
+    
+    const svgW = 500, svgH = 200, paddingLeft = 40, paddingRight = 20, paddingTop = 20, paddingBottom = 20;
+    const chartW = svgW - paddingLeft - paddingRight;
+    const chartH = svgH - paddingTop - paddingBottom;
+    
+    const vals = dailyTime.map(d => d.minutes);
+    const maxVal = Math.max(30, ...vals) * 1.15;
+    const minVal = 0;
+    
+    const gridLines = 4;
+    for (let i = 0; i <= gridLines; i++) {
+      const y = paddingTop + (chartH * i) / gridLines;
+      const val = Math.round(maxVal - ((maxVal - minVal) * i) / gridLines);
+      svg.appendChild(this.createSVGNode('line', { x1: paddingLeft, y1: y, x2: svgW - paddingRight, y2: y, stroke: 'rgba(255,255,255,0.03)', 'stroke-dasharray': '2 4' }));
+      svg.appendChild(this.createSVGNode('text', { x: paddingLeft - 8, y: y + 3, fill: '#686580', 'font-size': '8', 'text-anchor': 'end' }, `${val}м`));
+    }
+    
+    const pointsCount = dailyTime.length;
+    const barWidth = Math.max(2, (chartW / pointsCount) * 0.7);
+    const gap = (chartW / pointsCount) * 0.3;
+    
+    dailyTime.forEach((d, idx) => {
+      const x = paddingLeft + idx * (barWidth + gap) + gap/2;
+      const h = ((d.minutes - minVal) / (maxVal - minVal)) * chartH;
+      const y = paddingTop + chartH - h;
+      
+      const bar = this.createSVGNode('rect', { x, y, width: barWidth, height: h, fill: 'var(--color-pink)', rx: 2 });
+      bar.appendChild(this.createSVGNode('title', {}, `${d.date}: ${Math.round(d.minutes)} минут`));
+      svg.appendChild(bar);
+      
+      if (idx === 0 || idx === pointsCount - 1 || (pointsCount > 2 && idx === Math.floor(pointsCount / 2))) {
+        svg.appendChild(this.createSVGNode('text', { x: x + barWidth/2, y: paddingTop + chartH + 14, fill: '#686580', 'font-size': '8', 'text-anchor': 'middle' }, d.date.substring(5)));
+      }
+    });
+  }
+
+  drawAdminCoursesChart(coursesStats) {
+    const svg = document.getElementById('admin-courses-svg');
+    if (!svg) return;
+    svg.innerHTML = "";
+    
+    if (!coursesStats || coursesStats.length === 0) {
+      svg.appendChild(this.createSVGNode('text', { x: 250, y: 90, fill: '#8e8ab3', 'text-anchor': 'middle', 'font-size': '12' }, "Курсы не созданы"));
+      return;
+    }
+    
+    const svgW = 500, svgH = 180, paddingLeft = 140, paddingRight = 40, paddingTop = 15, paddingBottom = 15;
+    const chartW = svgW - paddingLeft - paddingRight;
+    const chartH = svgH - paddingTop - paddingBottom;
+    
+    const maxVal = Math.max(5, ...coursesStats.map(c => c.student_count)) * 1.15;
+    const barHeight = Math.max(8, (chartH / coursesStats.length) * 0.6);
+    const gap = (chartH / coursesStats.length) * 0.4;
+    
+    coursesStats.forEach((c, idx) => {
+      const y = paddingTop + idx * (barHeight + gap) + gap/2;
+      const w = (c.student_count / maxVal) * chartW;
+      
+      const maxTextLen = 22;
+      const shortTitle = c.title.length > maxTextLen ? c.title.substring(0, maxTextLen) + "..." : c.title;
+      
+      svg.appendChild(this.createSVGNode('text', { x: paddingLeft - 10, y: y + barHeight/2 + 3, fill: '#bfbdd3', 'font-size': '8', 'text-anchor': 'end' }, `${shortTitle} (${c.teacher_name})`));
+      
+      const bar = this.createSVGNode('rect', { x: paddingLeft, y, width: w, height: barHeight, fill: 'var(--color-purple)', rx: barHeight/4 });
+      bar.appendChild(this.createSVGNode('title', {}, `${c.title} // Преподаватель: ${c.teacher_name} // Студентов: ${c.student_count}`));
+      svg.appendChild(bar);
+      
+      svg.appendChild(this.createSVGNode('text', { x: paddingLeft + w + 5, y: y + barHeight/2 + 3, fill: 'var(--color-cyan)', 'font-weight': 'bold', 'font-size': '8' }, c.student_count));
+    });
+  }
+
+  drawAdminCorrelationChart(users) {
+    const svg = document.getElementById('admin-correlation-svg');
+    if (!svg) return;
+    svg.innerHTML = "";
+    
+    const students = users.filter(u => u.role === 'student');
+    if (students.length === 0) {
+      svg.appendChild(this.createSVGNode('text', { x: 400, y: 110, fill: '#8e8ab3', 'text-anchor': 'middle', 'font-size': '12' }, "Нет данных о курсантах"));
+      return;
+    }
+    
+    const svgW = 800, svgH = 220, paddingLeft = 50, paddingRight = 40, paddingTop = 20, paddingBottom = 30;
+    const chartW = svgW - paddingLeft - paddingRight;
+    const chartH = svgH - paddingTop - paddingBottom;
+    
+    const maxTime = Math.max(60, ...students.map(s => s.time_spent_mins || 0)) * 1.15;
+    const maxTasks = Math.max(5, ...students.map(s => s.tasks_count || 0)) * 1.15;
+    
+    const yGrid = 4;
+    for (let i = 0; i <= yGrid; i++) {
+      const y = paddingTop + (chartH * i) / yGrid;
+      const mins = Math.round(maxTime - (maxTime * i) / yGrid);
+      svg.appendChild(this.createSVGNode('line', { x1: paddingLeft, y1: y, x2: svgW - paddingRight, y2: y, stroke: 'rgba(255,255,255,0.03)', 'stroke-dasharray': '2 4' }));
+      svg.appendChild(this.createSVGNode('text', { x: paddingLeft - 10, y: y + 3, fill: '#686580', 'font-size': '8', 'text-anchor': 'end' }, `${mins}м`));
+    }
+    
+    const xGrid = 5;
+    for (let i = 0; i <= xGrid; i++) {
+      const x = paddingLeft + (chartW * i) / xGrid;
+      const tasks = Math.round((maxTasks * i) / xGrid);
+      svg.appendChild(this.createSVGNode('line', { x1: x, y1: paddingTop, x2: x, y2: paddingTop + chartH, stroke: 'rgba(255,255,255,0.03)', 'stroke-dasharray': '2 4' }));
+      svg.appendChild(this.createSVGNode('text', { x: x, y: paddingTop + chartH + 14, fill: '#686580', 'font-size': '8', 'text-anchor': 'middle' }, `${tasks} зад.`));
+    }
+    
+    svg.appendChild(this.createSVGNode('line', { x1: paddingLeft, y1: paddingTop + chartH, x2: svgW - paddingRight, y2: paddingTop + chartH, stroke: 'rgba(255,255,255,0.1)' }));
+    svg.appendChild(this.createSVGNode('line', { x1: paddingLeft, y1: paddingTop, x2: paddingLeft, y2: paddingTop + chartH, stroke: 'rgba(255,255,255,0.1)' }));
+    
+    students.forEach(s => {
+      const x = paddingLeft + ((s.tasks_count || 0) / maxTasks) * chartW;
+      const y = paddingTop + chartH - (((s.time_spent_mins || 0) / maxTime) * chartH);
+      
+      const highscore = s.highscore || 0;
+      const r = Math.sqrt(highscore) / 40 + 4;
+      
+      const color = s.time_spent_mins > 30 ? 'var(--color-green)' : (s.tasks_count > 3 ? 'var(--color-cyan)' : 'var(--color-pink)');
+      const bubble = this.createSVGNode('circle', { cx: x, cy: y, r, fill: color, 'fill-opacity': 0.6, stroke: color, 'stroke-width': 1.5 });
+      bubble.appendChild(this.createSVGNode('title', {}, `${s.full_name}\nВремя на сайте: ${Math.round(s.time_spent_mins || 0)} мин\nВыполнено задач: ${s.tasks_count}\nРекорд симулятора: ${highscore.toLocaleString()}`));
+      svg.appendChild(bubble);
+      
+      svg.appendChild(this.createSVGNode('text', { x: x + r + 4, y: y + 3, fill: '#dbdaea', 'font-size': '7' }, s.full_name));
+    });
+  }
+
+  drawAdminRolesBreakdown(roleStats) {
+    const container = document.getElementById('admin-roles-breakdown');
+    if (!container) return;
+    container.innerHTML = "";
+    
+    const roles = [
+      { name: 'Ученики', key: 'student', color: 'var(--color-pink)' },
+      { name: 'Учителя', key: 'teacher', color: 'var(--color-cyan)' },
+      { name: 'Родители', key: 'parent', color: 'var(--color-purple)' }
+    ];
+    
+    const total = Object.values(roleStats).reduce((s, v) => s + v, 0) || 1;
+    
+    roles.forEach(r => {
+      const count = roleStats[r.key] || 0;
+      const pct = Math.round((count / total) * 100);
+      
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+          <span>${r.name}: <strong>${count}</strong></span>
+          <span style="color:${r.color};">${pct}%</span>
+        </div>
+        <div style="width:100%; height:4px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden;">
+          <div style="width:${pct}%; height:100%; background:${r.color}; border-radius:2px;"></div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
   }
 }
 

@@ -41,6 +41,12 @@
         <!-- Parent Tabs -->
         <button class="tab-btn parent-only hidden" data-tab="parent-hangar">КАБИНЕТ</button>
         <button class="tab-btn parent-only hidden" data-tab="parent-monitoring">МОНИТОРИНГ</button>
+
+        <!-- Admin Tabs -->
+        <button class="tab-btn admin-only hidden" data-tab="admin-dashboard">МОНИТОРИНГ</button>
+
+        <!-- Global Settings Tab -->
+        <button class="tab-btn" data-tab="settings">НАСТРОЙКИ</button>
       </nav>
 
       <div style="display:flex; align-items:center; gap:15px; margin-left:auto;">
@@ -49,6 +55,7 @@
           <span id="header-role-text" class="text-glow-cyan">КУРСАНТ // УР. 1</span>
         </div>
         <div id="header-user-name" class="text-glow-pink" style="font-size:0.8rem; font-weight:bold; display:none;">Гость</div>
+        <button id="btn-toggle-theme" class="btn secondary-btn" style="padding:4px 8px; font-size:0.75rem; border-color:var(--color-cyan); color:var(--color-cyan);" title="Сменить стиль">🎨 СТИЛЬ</button>
         <button id="btn-logout" class="btn secondary-btn" style="padding:4px 8px; font-size:0.75rem; border-color:var(--color-pink); color:var(--color-pink); display:none;">ВЫХОД</button>
       </div>
     </header>
@@ -141,6 +148,42 @@
                 </div>
               </div>
             </div>
+
+            <!-- Quantum Deposit Multiplying Sandbox ("Анонимность") -->
+            <div class="glass-panel quantum-multiplier-card" style="margin-top:20px; padding:20px;">
+              <h3 class="text-glow-cyan" style="font-size:0.9rem; margin-bottom:8px; font-family:var(--font-display);">КВАНТОВЫЙ ДЕПОЗИТ // АНОНИМНОСТЬ</h3>
+              <p class="desc-shop" style="margin-bottom:12px;">Рискните вашими Космо-Шардами в квантовом умножителе! Сделайте ставку и выберите множитель.</p>
+              
+              <div class="multiplier-container" style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+                <!-- Abstract rotating logo visual -->
+                <div class="quantum-core-visual" id="quantum-visual-core">
+                  <svg viewBox="0 0 100 100" width="60" height="60" style="filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.4));">
+                    <circle cx="50" cy="50" r="30" fill="none" stroke="#00f3ff" stroke-width="2" stroke-dasharray="10 5" class="spin-slow" />
+                    <circle cx="50" cy="50" r="20" fill="none" stroke="#ff007f" stroke-width="1.5" stroke-dasharray="5 5" class="spin-reverse" />
+                    <polygon points="50,38 58,58 38,48 62,48 42,58" fill="#9900ff" />
+                  </svg>
+                </div>
+                
+                <div style="width:100%; display:flex; gap:10px;">
+                  <div style="flex:1;">
+                    <label style="font-size:0.65rem; color:#8e8ab3; display:block; margin-bottom:4px;">ДЕПОЗИТ (ШАРДЫ):</label>
+                    <input type="number" id="quantum-bet-amount" min="1" max="100" value="5" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit;">
+                  </div>
+                  <div style="flex:1;">
+                    <label style="font-size:0.65rem; color:#8e8ab3; display:block; margin-bottom:4px;">УМНОЖЕНИЕ:</label>
+                    <select id="quantum-multiplier-select" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; box-sizing:border-box;">
+                      <option value="2">x2 (Шанс 48%)</option>
+                      <option value="5">x5 (Шанс 18%)</option>
+                      <option value="10">x10 (Шанс 8%)</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <button class="btn primary-btn pulse-glow" id="btn-spin-quantum" style="width:100%; padding:10px; font-size:0.8rem;">ИНИЦИИРОВАТЬ ДЕПОЗИТ</button>
+                <div id="quantum-result-text" style="font-size:0.8rem; font-weight:bold; height:20px; text-align:center; transition: var(--transition-smooth); margin-top:5px;"></div>
+              </div>
+            </div>
+
           </div>
 
           <!-- Column 2: Simulated Leaderboard & Teacher/Parent tools -->
@@ -1069,6 +1112,271 @@
           </div>
         </div>
       </section>
+      <!-- 5. SETTINGS & SUPPORT TAB -->
+      <section id="tab-settings" class="tab-view hidden">
+        <div class="gradebook-layout" style="display:flex; flex-direction:column; gap:20px; padding-bottom:30px;">
+          <div class="gradebook-header glass-panel">
+            <h2 class="text-glow-cyan">НАСТРОЙКИ СИСТЕМЫ</h2>
+            <p class="subtitle-text">Настройка личного профиля, симулятора, специальных возможностей и обратная связь</p>
+          </div>
+
+          <div class="analytics-dashboard-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; width:100%;">
+            
+            <!-- A. Profile Settings Card -->
+            <div class="analytics-card glass-panel" style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+              <h3 class="text-glow-cyan">ЛИЧНЫЙ ПРОФИЛЬ</h3>
+              <form id="settings-profile-form" style="display:flex; flex-direction:column; gap:12px;">
+                <div class="input-group">
+                  <label for="settings-fullname" style="font-size:0.75rem; color:#8e8ab3;">ПОЛНОЕ ИМЯ:</label>
+                  <input type="text" id="settings-fullname" required style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; margin-top:4px;">
+                </div>
+                <div class="input-group">
+                  <label for="settings-avatar" style="font-size:0.75rem; color:#8e8ab3;">АВАТАР (EMOJI):</label>
+                  <select id="settings-avatar" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; margin-top:4px; box-sizing:border-box;">
+                    <option value="🎓">🎓 Курсант</option>
+                    <option value="🚀">🚀 Пилот</option>
+                    <option value="🛰">🛰 Космонавт</option>
+                    <option value="👾">👾 Завоеватель</option>
+                    <option value="🛸">🛸 Пришелец</option>
+                    <option value="👨‍🚀">👨‍🚀 Астронавт</option>
+                    <option value="👩‍🔬">👩‍🔬 Ученый</option>
+                  </select>
+                </div>
+                <div class="input-group">
+                  <label for="settings-password" style="font-size:0.75rem; color:#8e8ab3;">НОВЫЙ ПАРОЛЬ (ОСТАВЬТЕ ПУСТЫМ ДЛЯ СОХРАНЕНИЯ СТАРОГО):</label>
+                  <input type="password" id="settings-password" placeholder="••••••••" style="width:100%; padding:10px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; margin-top:4px;">
+                </div>
+                <button type="submit" class="btn primary-btn pulse-glow" style="width:100%; padding:10px; font-weight:bold; margin-top:5px;">СОХРАНИТЬ ПРОФИЛЬ</button>
+              </form>
+            </div>
+
+            <!-- B. Simulator Settings Card -->
+            <div class="analytics-card glass-panel" style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+              <h3 class="text-glow-pink">НАСТРОЙКИ СИМУЛЯТОРА</h3>
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div class="input-group">
+                  <label style="font-size:0.75rem; color:#8e8ab3;">СЛОЖНОСТЬ СИМУЛЯЦИИ:</label>
+                  <div style="display:flex; gap:8px; margin-top:4px;">
+                    <button class="btn role-btn active" id="btn-difficulty-easy" style="flex:1;">ЛЕГКО</button>
+                    <button class="btn role-btn" id="btn-difficulty-medium" style="flex:1;">СРЕДНЕ</button>
+                    <button class="btn role-btn" id="btn-difficulty-hard" style="flex:1;">ТЯЖЕЛО</button>
+                  </div>
+                </div>
+                <div class="input-group">
+                  <label style="font-size:0.75rem; color:#8e8ab3;">УПРАВЛЕНИЕ ИСТРЕБИТЕЛЕМ:</label>
+                  <div style="display:flex; gap:8px; margin-top:4px;">
+                    <button class="btn role-btn active" id="btn-controls-wasd" style="flex:1;">W / A / S / D</button>
+                    <button class="btn role-btn" id="btn-controls-arrows" style="flex:1;">СТРЕЛКИ</button>
+                  </div>
+                </div>
+                <div class="input-group">
+                  <label style="font-size:0.75rem; color:#8e8ab3;">ГРОМКОСТЬ СИСТЕМЫ:</label>
+                  <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+                    <div style="display:flex; align-items:center; gap:10px; font-size:0.7rem;">
+                      <span style="min-width:60px; color:#a5a2bf;">ОБЩАЯ:</span>
+                      <input type="range" id="settings-volume-master" min="0" max="100" value="70" style="flex:1;">
+                      <span id="settings-val-volume-master" style="min-width:30px; text-align:right;">70%</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; font-size:0.7rem;">
+                      <span style="min-width:60px; color:#a5a2bf;">МУЗЫКА:</span>
+                      <input type="range" id="settings-volume-music" min="0" max="100" value="60" style="flex:1;">
+                      <span id="settings-val-volume-music" style="min-width:30px; text-align:right;">60%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- C. Design & Accessibility Card -->
+            <div class="analytics-card glass-panel" style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+              <h3 class="text-glow-cyan">ДИЗАЙН И ДОСТУПНОСТЬ</h3>
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div class="input-group">
+                  <label style="font-size:0.75rem; color:#8e8ab3; display:block; margin-bottom:6px;">ТЕМА ИНТЕРФЕЙСА:</label>
+                  <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button class="btn theme-btn active" data-theme="cyber-neon" style="width:100%; border:1px solid var(--color-pink);">🌌 КИБЕР-НЕОН</button>
+                    <button class="btn theme-btn" data-theme="cyber-minimalist" style="width:100%; border:1px solid rgba(255,255,255,0.1);">🛸 МИНИМАЛИЗМ</button>
+                    <button class="btn theme-btn" data-theme="neo-brutalist" style="width:100%; border:1px solid #000;">🎨 НЕО-БРУТАЛИЗМ</button>
+                    <button class="btn theme-btn" data-theme="mini-minimalist" style="width:100%; border:1px solid rgba(255,255,255,0.15);">◽️ МИНИ-МИНИМАЛИЗМ</button>
+                  </div>
+                </div>
+                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08);">
+                <div class="input-group">
+                  <label style="font-size:0.75rem; color:#8e8ab3; display:block; margin-bottom:6px;">СПЕЦИАЛЬНЫЕ ВОЗМОЖНОСТИ:</label>
+                  <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#dbdaea;">
+                      <span>Контрастный режим:</span>
+                      <label class="check-container" style="width:20px; height:20px; position:relative;">
+                        <input type="checkbox" id="accessibility-high-contrast" style="position:absolute; opacity:0; cursor:pointer; height:0; width:0;">
+                        <span class="checkmark" style="position:absolute; top:0; left:0; height:18px; width:18px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); border-radius:3px;"></span>
+                      </label>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#dbdaea; margin-top:5px;">
+                      <span>Масштаб шрифта:</span>
+                      <select id="accessibility-font-scale" style="padding:4px 8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit;">
+                        <option value="small">Мелкий</option>
+                        <option value="normal" selected>Обычный</option>
+                        <option value="large">Крупный</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- D. Danger Zone & Support Card -->
+            <div class="analytics-card glass-panel" style="padding:20px; display:flex; flex-direction:column; gap:12px;">
+              <h3 class="text-glow-pink">ОПАСНАЯ ЗОНА</h3>
+              <p class="desc-text" style="color:rgba(255,0,127,0.7); font-size:0.72rem;">Действия ниже не могут быть отменены. Будьте предельно внимательны.</p>
+              <div style="display:flex; flex-direction:column; gap:10px; margin-top:5px;">
+                <button class="btn secondary-btn" id="btn-danger-reset" style="width:100%; border-color:var(--color-pink); color:var(--color-pink); font-weight:bold;">СБРОСИТЬ ВЕСЬ УЧЕБНЫЙ ПРОГРЕСС</button>
+                <button class="btn secondary-btn" id="btn-danger-delete" style="width:100%; background:rgba(255,0,127,0.1); border-color:var(--color-pink); color:var(--color-pink); font-weight:bold;">УДАЛИТЬ УЧЕТНУЮ ЗАПИСЬ НАВСЕГДА</button>
+              </div>
+              
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.08); margin:10px 0;">
+              
+              <h3 class="text-glow-cyan" style="font-size:0.85rem;">ОБРАТНАЯ СВЯЗЬ</h3>
+              <form id="support-form" style="display:flex; flex-direction:column; gap:10px;">
+                <input type="text" id="support-subject" required placeholder="Тема обращения" style="width:100%; padding:8px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; font-family:inherit; font-size:0.75rem;">
+                <textarea id="support-message" required rows="3" placeholder="Опишите ваше предложение или баг..." style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:#fff; padding:8px; font-family:inherit; font-size:0.75rem; box-sizing:border-box; resize:none;"></textarea>
+                <button type="submit" class="btn primary-btn pulse-glow" style="width:100%; padding:8px; font-size:0.75rem; font-weight:bold;">ОТПРАВИТЬ РАЗРАБОТЧИКАМ</button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. ADMIN DASHBOARD FOR MONITORING -->
+      <section id="tab-admin-dashboard" class="tab-view hidden">
+        <div class="gradebook-layout" style="display:flex; flex-direction:column; gap:20px; min-height:100%; padding-bottom:30px;">
+          <div class="gradebook-header glass-panel">
+            <h2 class="text-glow-cyan">ПАНЕЛЬ АДМИНИСТРАТИВНОГО МОНИТОРИНГА</h2>
+            <p class="subtitle-text">Статистика в реальном времени, активность пользователей и обращения в поддержку</p>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="analytics-dashboard-grid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 5px; width:100%;">
+            <div class="flight-stat-box glass-panel">
+              <span class="label">ОНЛАЙН ПОЛЬЗОВАТЕЛИ</span>
+              <span id="admin-stat-online" class="value text-glow-cyan" style="color:var(--color-green);">0</span>
+            </div>
+            <div class="flight-stat-box glass-panel">
+              <span class="label">ВСЕГО КУРСАНТОВ</span>
+              <span id="admin-stat-students" class="value text-glow-pink">0</span>
+            </div>
+            <div class="flight-stat-box glass-panel">
+              <span class="label">УЧИТЕЛЕЙ & РОДИТЕЛЕЙ</span>
+              <span id="admin-stat-others" class="value">0</span>
+            </div>
+            <div class="flight-stat-box glass-panel">
+              <span class="label">ВЫПОЛНЕНО ЗАДАЧ</span>
+              <span id="admin-stat-tasks" class="value" style="color: var(--color-gold);">0</span>
+            </div>
+          </div>
+
+          <!-- Interactive Charts Grid (5 analytics graphs!) -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; width:100%;">
+            
+            <!-- Chart 1: Usage Graph -->
+            <div class="analytics-card glass-panel" style="padding:20px; height: 320px; display:flex; flex-direction:column;">
+              <h3>ГРАФИК АКТИВНОСТИ И ИСПОЛЬЗОВАНИЯ</h3>
+              <p class="desc-text" style="font-size:0.68rem; color:#8e8ab3; margin-bottom:8px;">Общее число действий (клики, логины, тесты) по дням</p>
+              <div style="flex-grow:1; position:relative; min-height:180px;">
+                <svg id="admin-usage-svg" viewBox="0 0 500 200" style="width:100%; height:100%; overflow:visible;">
+                  <!-- Dynamic usage chart -->
+                </svg>
+              </div>
+            </div>
+
+            <!-- Chart 2: Spending Time Graph -->
+            <div class="analytics-card glass-panel" style="padding:20px; height: 320px; display:flex; flex-direction:column;">
+              <h3>ГРАФИК ЗАТРАЧЕННОГО ВРЕМЕНИ</h3>
+              <p class="desc-text" style="font-size:0.68rem; color:#8e8ab3; margin-bottom:8px;">Суммарное время сессий всех пользователей на портале (в минутах)</p>
+              <div style="flex-grow:1; position:relative; min-height:180px;">
+                <svg id="admin-time-svg" viewBox="0 0 500 200" style="width:100%; height:100%; overflow:visible;">
+                  <!-- Dynamic time chart -->
+                </svg>
+              </div>
+            </div>
+
+            <!-- Chart 3: Users Growth Graph -->
+            <div class="analytics-card glass-panel" style="padding:20px; height: 320px; display:flex; flex-direction:column;">
+              <h3>ГРАФИК РОСТА И РОЛЕЙ ПОЛЬЗОВАТЕЛЕЙ</h3>
+              <p class="desc-text" style="font-size:0.68rem; color:#8e8ab3; margin-bottom:8px;">Кумулятивная кривая регистраций и доля ролей в системе</p>
+              <div style="display:flex; flex-grow:1; gap:10px; min-height:180px;">
+                <!-- Growth SVG -->
+                <svg id="admin-growth-svg" viewBox="0 0 320 180" style="width:65%; height:100%; overflow:visible;">
+                  <!-- Dynamic growth chart -->
+                </svg>
+                <!-- Role Pie/Bar Representation -->
+                <div id="admin-roles-breakdown" style="width:35%; display:flex; flex-direction:column; justify-content:center; gap:8px; font-size:0.7rem; border-left:1px solid rgba(255,255,255,0.05); padding-left:10px;">
+                  <!-- Role bars -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart 4: Courses Graph -->
+            <div class="analytics-card glass-panel" style="padding:20px; height: 320px; display:flex; flex-direction:column;">
+              <h3>ГРАФИК ПОПУЛЯРНОСТИ КУРСОВ</h3>
+              <p class="desc-text" style="font-size:0.68rem; color:#8e8ab3; margin-bottom:8px;">Количество записанных студентов по учебным курсам</p>
+              <div style="flex-grow:1; position:relative; min-height:180px;">
+                <svg id="admin-courses-svg" viewBox="0 0 500 180" style="width:100%; height:100%; overflow:visible;">
+                  <!-- Dynamic courses bar chart -->
+                </svg>
+              </div>
+            </div>
+
+            <!-- Chart 5: Correlation Graph (Users vs. Time vs. Completed Tasks) -->
+            <div class="analytics-card glass-panel" style="padding:20px; grid-column: span 2; height: 340px; display:flex; flex-direction:column;">
+              <h3>ДИАГРАММА СООТНОШЕНИЯ: ПОЛЬЗОВАТЕЛИ // ВРЕМЯ // ЗАДАЧИ</h3>
+              <p class="desc-text" style="font-size:0.68rem; color:#8e8ab3; margin-bottom:10px;">Корреляция между временем на сайте (минуты, ось Y), завершенными тестами (ось X) и highscore (диаметр пузырька)</p>
+              <div style="flex-grow:1; position:relative; min-height:220px; display:flex;">
+                <svg id="admin-correlation-svg" viewBox="0 0 800 220" style="width:100%; height:100%; overflow:visible;">
+                  <!-- Dynamic scatter / bubble chart -->
+                </svg>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Row: Support Messages & Registry -->
+          <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap: 20px; width:100%;">
+            <!-- Support Messages -->
+            <div class="analytics-card glass-panel" style="padding:20px; height: 400px; display:flex; flex-direction:column; overflow:hidden;">
+              <h3>ОБРАЩЕНИЯ К РАЗРАБОТЧИКАМ</h3>
+              <div id="admin-support-list" style="flex-grow:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:5px;">
+                <p style="color:#8e8ab3; font-style:italic; text-align:center; font-size:0.8rem;">Нет обращений.</p>
+              </div>
+            </div>
+
+            <!-- User Registry Table -->
+            <div class="glass-panel" style="padding: 20px; display:flex; flex-direction:column; overflow:hidden; height: 400px;">
+              <h3 style="font-family:var(--font-display); font-size:0.9rem; color:var(--color-cyan); margin-bottom:15px; border-bottom:1px solid rgba(0,243,255,0.08); padding-bottom:10px;">РЕЕСТР ПОЛЬЗОВАТЕЛЕЙ СИСТЕМЫ</h3>
+              <div class="table-container" style="flex-grow:1; overflow-y:auto; width:100%;">
+                <table style="width:100%; font-size:0.8rem; border-collapse: collapse; text-align:left;">
+                  <thead>
+                    <tr class="leaderboard-header-row" style="background: rgba(0,0,0,0.3); border-bottom:1px solid rgba(255,255,255,0.08);">
+                      <th style="padding: 10px;">СТАТУС</th>
+                      <th style="padding: 10px;">ИМЯ</th>
+                      <th style="padding: 10px;">EMAIL</th>
+                      <th style="padding: 10px;">РОЛЬ</th>
+                      <th style="padding: 10px;">УРОВЕНЬ</th>
+                      <th style="padding: 10px;">ВРЕМЯ (МИН)</th>
+                      <th style="padding: 10px;">ЗАДАЧИ</th>
+                      <th style="padding: 10px;">РЕКОРД</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-users-tbody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
 
     </main>
   </div>
@@ -1134,6 +1442,7 @@
             <option value="student">Ученик (Курсант)</option>
             <option value="teacher">Учитель (Инструктор)</option>
             <option value="parent">Родитель (Наблюдатель)</option>
+            <option value="admin">Администратор (Мониторинг)</option>
           </select>
         </div>
         <button type="submit" class="btn primary-btn pulse-glow auth-submit-btn" style="width:100%; padding:12px; margin-top:10px; font-weight:bold;">ЗАРЕГИСТРИРОВАТЬСЯ</button>

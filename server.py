@@ -107,7 +107,7 @@ def init_db():
             full_name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            role TEXT NOT NULL, -- 'student', 'teacher', 'parent'
+            role TEXT NOT NULL, -- 'student', 'teacher', 'parent', 'admin'
             xp INTEGER DEFAULT 0,
             level INTEGER DEFAULT 1,
             shards INTEGER DEFAULT 0,
@@ -115,6 +115,7 @@ def init_db():
             unlocked_items TEXT DEFAULT '["flame_pink"]',
             active_flame TEXT DEFAULT 'flame_pink',
             active_shield TEXT DEFAULT 'cyan',
+            avatar TEXT DEFAULT '🎓',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -195,12 +196,151 @@ def init_db():
         )
     ''')
     
+    # 8. Support Messages table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS support_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            email TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 9. Activity Log table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS activity_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action TEXT NOT NULL,
+            details TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
+    # Try adding last_active_at and avatar to users
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN last_active_at TIMESTAMP")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT '🎓'")
+    except Exception:
+        pass
+    
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_log_timestamp ON activity_log(timestamp)")
+    except Exception:
+        pass
+    try:
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_log_user ON activity_log(user_id)")
+    except Exception:
+        pass
+
+    # Generate mock activity logs if the table is empty
+    try:
+        cursor.execute("SELECT COUNT(*) FROM activity_log")
+        row = cursor.fetchone()
+        count = row[0] if row else 0
+        if count == 0:
+            import datetime
+            # Fetch all users
+            cursor.execute("SELECT id, role, email FROM users")
+            all_users = [dict(r) for r in cursor.fetchall()]
+            
+            subjects = ['math', 'physics', 'cs']
+            today = datetime.datetime.now()
+            
+            # Generate logs for the last 14 days
+            for day_offset in range(14, -1, -1):
+                target_date = today - datetime.timedelta(days=day_offset)
+                
+                for u in all_users:
+                    u_id = u['id']
+                    role = u['role']
+                    
+                    if role == 'teacher':
+                        if random.random() < 0.5:
+                            login_time = target_date.replace(hour=random.randint(9, 17), minute=random.randint(0, 59), second=random.randint(0, 59))
+                            cursor.execute("INSERT INTO activity_log (user_id, action, timestamp) VALUES (?, 'login', ?)", 
+                                           (u_id, login_time.strftime('%Y-%m-%d %H:%M:%S')))
+                            
+                            if random.random() < 0.3:
+                                create_time = login_time + datetime.timedelta(minutes=random.randint(5, 30))
+                                cursor.execute("INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, 'course_create', ?, ?)", 
+                                               (u_id, json.dumps({"title": "Математический кружок"}), create_time.strftime('%Y-%m-%d %H:%M:%S')))
+                    
+                    elif role == 'student':
+                        if random.random() < 0.8:
+                            # Log in
+                            login_hour = random.randint(8, 21)
+                            login_time = target_date.replace(hour=login_hour, minute=random.randint(0, 59), second=random.randint(0, 59))
+                            cursor.execute("INSERT INTO activity_log (user_id, action, timestamp) VALUES (?, 'login', ?)", 
+                                           (u_id, login_time.strftime('%Y-%m-%d %H:%M:%S')))
+                            
+                            # Pings (spending time)
+                            ping_count = random.randint(20, 80) # 10 to 40 mins
+                            current_time = login_time
+                            for _ in range(ping_count):
+                                current_time += datetime.timedelta(seconds=30)
+                                cursor.execute("INSERT INTO activity_log (user_id, action, timestamp) VALUES (?, 'ping', ?)", 
+                                               (u_id, current_time.strftime('%Y-%m-%d %H:%M:%S')))
+                                
+                            # Read notes
+                            if random.random() < 0.5:
+                                notes_time = login_time + datetime.timedelta(minutes=random.randint(2, 10))
+                                sub = random.choice(subjects)
+                                cursor.execute("INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, 'progress_submit', ?, ?)",
+                                               (u_id, json.dumps({"type": "notes_read", "subject": sub}), notes_time.strftime('%Y-%m-%d %H:%M:%S')))
+                                cursor.execute("INSERT INTO student_progress (student_id, subject, type, score, max_score, details, timestamp) VALUES (?, ?, 'notes_read', 1, 1, ?, ?)",
+                                               (u_id, sub, json.dumps({"title": f"Конспект по {sub}"}), notes_time.strftime('%Y-%m-%d %H:%M:%S')))
+                            
+                            # Do tests
+                            if random.random() < 0.4:
+                                test_time = login_time + datetime.timedelta(minutes=random.randint(15, 30))
+                                sub = random.choice(subjects)
+                                score = random.randint(6, 10)
+                                cursor.execute("INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, 'progress_submit', ?, ?)",
+                                               (u_id, json.dumps({"type": "test", "subject": sub}), test_time.strftime('%Y-%m-%d %H:%M:%S')))
+                                cursor.execute("INSERT INTO student_progress (student_id, subject, type, score, max_score, details, timestamp) VALUES (?, ?, 'test', ?, 10, ?, ?)",
+                                               (u_id, sub, score, json.dumps({"percentage": score*10}), test_time.strftime('%Y-%m-%d %H:%M:%S')))
+                                
+                            # Do simulator
+                            if random.random() < 0.6:
+                                sim_time = login_time + datetime.timedelta(minutes=random.randint(10, 40))
+                                score = random.randint(2000, 20000)
+                                accuracy = random.randint(50, 100)
+                                cursor.execute("INSERT INTO activity_log (user_id, action, details, timestamp) VALUES (?, 'progress_submit', ?, ?)",
+                                               (u_id, json.dumps({"type": "simulator"}), sim_time.strftime('%Y-%m-%d %H:%M:%S')))
+                                cursor.execute("INSERT INTO student_progress (student_id, subject, type, score, max_score, details, timestamp) VALUES (?, 'simulator', 'simulator', ?, ?, ?, ?)",
+                                               (u_id, score, score, json.dumps({"accuracy": accuracy, "solvedCount": random.randint(5, 25), "avgSpeed": random.randint(1500, 4000), "wave": random.randint(1, 4)}), sim_time.strftime('%Y-%m-%d %H:%M:%S')))
+    except Exception as mock_err:
+        print(f"Error generating mock activity logs: {mock_err}")
+
     conn.commit()
     conn.close()
     if IS_POSTGRES and HAS_PSYCOPG2:
         print("=== PostgreSQL Database Initialized Successfully ===")
     else:
         print("=== SQLite Database Initialized Successfully ===")
+
+def log_activity(user_id, action, details=None):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        details_str = json.dumps(details) if details else None
+        cursor.execute(
+            "INSERT INTO activity_log (user_id, action, details) VALUES (?, ?, ?)",
+            (user_id, action, details_str)
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Error logging activity: {e}")
+
+
 
 # --- 1. USER AUTHENTICATION ---
 
@@ -215,6 +355,9 @@ def register():
 
         if not full_name or not email or not password:
             return jsonify({"status": "error", "message": "Все поля обязательны для заполнения"}), 400
+
+        if role == 'admin' and email != 'aibek11@gmail.com':
+            return jsonify({"status": "error", "message": "Регистрация администратора запрещена для данного email"}), 403
 
         hashed_pw = generate_password_hash(password)
         conn = get_db_connection()
@@ -231,7 +374,16 @@ def register():
             (full_name, email, hashed_pw, role)
         )
         conn.commit()
+        
+        # Log registration
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+        user_row = cursor.fetchone()
+        new_uid = user_row['id'] if user_row else None
         conn.close()
+        
+        if new_uid:
+            log_activity(new_uid, 'register')
+            
         return jsonify({"status": "success", "message": "Регистрация успешна!"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": f"Ошибка базы данных: {str(e)}"}), 500
@@ -250,10 +402,16 @@ def login():
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
-        conn.close()
 
         if user and check_password_hash(user['password'], password):
+            # Update last active timestamp
+            cursor.execute("UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = ?", (user['id'],))
+            conn.commit()
             unlocked = json.loads(user['unlocked_items']) if user['unlocked_items'] else ["flame_pink"]
+            conn.close()
+            
+            log_activity(user['id'], 'login')
+            
             return jsonify({
                 "status": "success",
                 "user": {
@@ -267,9 +425,11 @@ def login():
                     "highscore": user['highscore'],
                     "unlocked_items": unlocked,
                     "active_flame": user['active_flame'],
-                    "active_shield": user['active_shield']
+                    "active_shield": user['active_shield'],
+                    "avatar": user['avatar'] if 'avatar' in dict(user) else '🎓'
                 }
             }), 200
+        conn.close()
         return jsonify({"status": "error", "message": "Неверный email или пароль"}), 401
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -300,13 +460,108 @@ def update_profile():
                 highscore = COALESCE(?, highscore),
                 unlocked_items = COALESCE(?, unlocked_items),
                 active_flame = COALESCE(?, active_flame),
-                active_shield = COALESCE(?, active_shield)
+                active_shield = COALESCE(?, active_shield),
+                last_active_at = CURRENT_TIMESTAMP
             WHERE id = ?
         ''', (xp, level, shards, highscore, unlocked_json, active_flame, active_shield, user_id))
         
         conn.commit()
         conn.close()
+        
+        log_activity(user_id, 'profile_stats_update')
         return jsonify({"status": "success", "message": "Профиль успешно обновлен"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/profile/edit', methods=['POST'])
+def edit_profile():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        full_name = data.get('full_name')
+        avatar = data.get('avatar')
+        new_password = data.get('password')
+        
+        if not user_id:
+            return jsonify({"status": "error", "message": "Идентификатор пользователя обязателен"}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check if user exists
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            conn.close()
+            return jsonify({"status": "error", "message": "Пользователь не найден"}), 404
+            
+        if new_password:
+            hashed_pw = generate_password_hash(new_password)
+            cursor.execute("UPDATE users SET full_name = ?, avatar = ?, password = ? WHERE id = ?", (full_name, avatar, hashed_pw, user_id))
+        else:
+            cursor.execute("UPDATE users SET full_name = ?, avatar = ? WHERE id = ?", (full_name, avatar, user_id))
+            
+        conn.commit()
+        conn.close()
+        
+        log_activity(user_id, 'profile_edit')
+        return jsonify({"status": "success", "message": "Профиль успешно изменен!"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/profile/reset', methods=['POST'])
+def reset_profile():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({"status": "error", "message": "Идентификатор пользователя обязателен"}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE users 
+            SET xp = 0, level = 1, shards = 0, highscore = 0, 
+                unlocked_items = '["flame_pink"]', active_flame = 'flame_pink', active_shield = 'cyan'
+            WHERE id = ?
+        ''', (user_id,))
+        
+        cursor.execute("DELETE FROM student_progress WHERE student_id = ?", (user_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        log_activity(user_id, 'profile_reset')
+        return jsonify({"status": "success", "message": "Прогресс успешно сброшен!"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/profile/delete', methods=['POST'])
+def delete_profile():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({"status": "error", "message": "Идентификатор пользователя обязателен"}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM enrollments WHERE student_id = ?", (user_id,))
+        cursor.execute("DELETE FROM parent_student WHERE parent_id = ? OR student_id = ?", (user_id, user_id))
+        cursor.execute("DELETE FROM student_progress WHERE student_id = ?", (user_id,))
+        cursor.execute("DELETE FROM activity_log WHERE user_id = ?", (user_id,))
+        cursor.execute("DELETE FROM support_messages WHERE user_id = ?", (user_id,))
+        cursor.execute("DELETE FROM courses WHERE teacher_id = ?", (user_id,))
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"status": "success", "message": "Аккаунт успешно удален!"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -340,6 +595,7 @@ def create_course():
         conn.commit()
         conn.close()
         
+        log_activity(teacher_id, 'course_create', {'title': title})
         return jsonify({"status": "success", "course_code": code, "message": "Курс успешно создан!"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -377,6 +633,7 @@ def join_course():
         conn.commit()
         conn.close()
         
+        log_activity(student_id, 'course_join', {'course_id': course_id})
         return jsonify({"status": "success", "message": f"Вы успешно подключились к курсу '{course['title']}'!"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -487,6 +744,12 @@ def create_course_material(course_id):
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        # Find teacher_id to log activity
+        cursor.execute("SELECT teacher_id FROM courses WHERE id = ?", (course_id,))
+        course_row = cursor.fetchone()
+        teacher_id = course_row['teacher_id'] if course_row else None
+
         cursor.execute(
             "INSERT INTO custom_materials (course_id, title, content) VALUES (?, ?, ?)",
             (course_id, title, content)
@@ -494,6 +757,9 @@ def create_course_material(course_id):
         conn.commit()
         conn.close()
         
+        if teacher_id:
+            log_activity(teacher_id, 'material_create', {'course_id': course_id, 'title': title})
+            
         return jsonify({"status": "success", "message": "Материал успешно опубликован!"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -509,9 +775,15 @@ def create_course_quiz(course_id):
         if not title or not questions:
             return jsonify({"status": "error", "message": "Название и вопросы обязательны"}), 400
 
-        questions_json = json.dumps(questions)
         conn = get_db_connection()
         cursor = conn.cursor()
+        
+        # Find teacher_id to log activity
+        cursor.execute("SELECT teacher_id FROM courses WHERE id = ?", (course_id,))
+        course_row = cursor.fetchone()
+        teacher_id = course_row['teacher_id'] if course_row else None
+
+        questions_json = json.dumps(questions)
         cursor.execute(
             "INSERT INTO custom_quizzes (course_id, title, description, questions_json) VALUES (?, ?, ?, ?)",
             (course_id, title, description, questions_json)
@@ -519,6 +791,9 @@ def create_course_quiz(course_id):
         conn.commit()
         conn.close()
         
+        if teacher_id:
+            log_activity(teacher_id, 'quiz_create', {'course_id': course_id, 'title': title})
+            
         return jsonify({"status": "success", "message": "Тест успешно создан и опубликован!"}), 201
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -587,6 +862,7 @@ def link_child():
         conn.commit()
         conn.close()
         
+        log_activity(parent_id, 'parent_link', {'child_id': student_id, 'child_email': child_email})
         return jsonify({"status": "success", "message": f"Ученик {child['full_name']} успешно привязан!"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -664,11 +940,12 @@ def submit_progress():
             (student_id, subject, p_type, score, max_score, details_str)
         )
         
-        # If simulator or test score, update highscore or shards on the user table if needed
-        # We also sync XP/level separately, but we can do a verification
+        cursor.execute("UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = ?", (student_id,))
         
         conn.commit()
         conn.close()
+        
+        log_activity(student_id, 'progress_submit', {'type': p_type, 'subject': subject, 'score': score})
         return jsonify({"status": "success", "message": "Прогресс успешно сохранен!"}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -706,9 +983,142 @@ def get_student_progress():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-init_db()
+
+@app.route('/api/ping', methods=['POST'])
+def ping_user():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        if user_id:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE id = ?", (user_id,))
+            conn.commit()
+            conn.close()
+            log_activity(user_id, 'ping')
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/support/send', methods=['POST'])
+def send_support_message():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        email = data.get('email')
+        subject = data.get('subject')
+        message = data.get('message')
+        
+        if not email or not subject or not message:
+            return jsonify({"status": "error", "message": "Все поля обязательны"}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO support_messages (user_id, email, subject, message) VALUES (?, ?, ?, ?)",
+            (user_id, email, subject, message)
+        )
+        conn.commit()
+        conn.close()
+        
+        if user_id:
+            log_activity(user_id, 'support_send', {'subject': subject})
+            
+        return jsonify({"status": "success", "message": "Обращение успешно отправлено!"}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 1. Total registered users by role
+        cursor.execute("SELECT role, COUNT(*) as count FROM users GROUP BY role")
+        role_stats = {row['role']: row['count'] for row in cursor.fetchall()}
+        
+        # 2. Total tasks/progress completed
+        cursor.execute("SELECT COUNT(*) as count FROM student_progress")
+        total_tasks = cursor.fetchone()['count']
+        
+        # 3. Users list with last active status and tasks completed, plus time spent in minutes
+        cursor.execute('''
+            SELECT u.id, u.full_name, u.email, u.role, u.level, u.xp, u.shards, u.highscore, u.created_at, u.last_active_at,
+                   (SELECT COUNT(*) FROM student_progress WHERE student_id = u.id) as tasks_count,
+                   (SELECT COUNT(*) * 30 / 60 FROM activity_log WHERE user_id = u.id AND action = 'ping') as time_spent_mins
+            FROM users u
+            ORDER BY u.created_at DESC
+        ''')
+        users_list = [dict(row) for row in cursor.fetchall()]
+        
+        # 4. User registrations over time
+        cursor.execute('''
+            SELECT DATE(created_at) as date, COUNT(*) as count 
+            FROM users 
+            GROUP BY DATE(created_at) 
+            ORDER BY date ASC
+            LIMIT 30
+        ''')
+        registrations = [dict(row) for row in cursor.fetchall()]
+        
+        # 5. Support messages list
+        cursor.execute("SELECT * FROM support_messages ORDER BY created_at DESC")
+        support_msgs = [dict(row) for row in cursor.fetchall()]
+        
+        # 6. Usage: daily total actions in activity_log
+        cursor.execute('''
+            SELECT DATE(timestamp) as date, COUNT(*) as count
+            FROM activity_log
+            GROUP BY DATE(timestamp)
+            ORDER BY date ASC
+            LIMIT 30
+        ''')
+        daily_usage = [dict(row) for row in cursor.fetchall()]
+        
+        # 7. Spending time: daily total minutes spent across all users
+        cursor.execute('''
+            SELECT DATE(timestamp) as date, (COUNT(*) * 30.0 / 60.0) as minutes
+            FROM activity_log
+            WHERE action = 'ping'
+            GROUP BY DATE(timestamp)
+            ORDER BY date ASC
+            LIMIT 30
+        ''')
+        daily_time = [dict(row) for row in cursor.fetchall()]
+        
+        # 8. Courses: title, teacher name, and count of enrollments
+        cursor.execute('''
+            SELECT c.id, c.title, u.full_name as teacher_name, 
+                   (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id) as student_count
+            FROM courses c
+            JOIN users u ON c.teacher_id = u.id
+            ORDER BY student_count DESC
+            LIMIT 15
+        ''')
+        courses_stats = [dict(row) for row in cursor.fetchall()]
+        
+        conn.close()
+        
+        return jsonify({
+            "status": "success",
+            "stats": {
+                "role_stats": role_stats,
+                "total_tasks": total_tasks,
+                "users": users_list,
+                "registrations": registrations,
+                "support_messages": support_msgs,
+                "daily_usage": daily_usage,
+                "daily_time": daily_time,
+                "courses_stats": courses_stats
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# Выносим запуск базы данных ВНЕ условия, убираем отступ (Tab):
+init_db() 
 
 if __name__ == '__main__':
-    init_db()
     print("=== Star Academy backend server running on port 5005 ===")
     app.run(host='0.0.0.0', port=5005, debug=True)

@@ -282,7 +282,14 @@ class GameEngine {
     this.simTopic = simTopic;
     
     // Accessibility options
-    this.speedModifier = speedModifier;
+    const diff = localStorage.getItem('star_difficulty') || 'easy';
+    let diffFactor = 1.0;
+    if (diff === 'easy') diffFactor = 0.8;
+    else if (diff === 'medium') diffFactor = 1.0;
+    else if (diff === 'hard') diffFactor = 1.3;
+    this.diffFactor = diffFactor;
+
+    this.speedModifier = speedModifier * diffFactor;
     this.reducedMotion = reducedMotion;
 
     this.score = 0;
@@ -659,10 +666,18 @@ class GameEngine {
     if (this.controlMode === 'keyboard') {
       let dx = 0;
       let dy = 0;
-      if (this.keys['KeyA'] || this.keys['ArrowLeft']) dx = -1;
-      if (this.keys['KeyD'] || this.keys['ArrowRight']) dx = 1;
-      if (this.keys['KeyW'] || this.keys['ArrowUp']) dy = -1;
-      if (this.keys['KeyS'] || this.keys['ArrowDown']) dy = 1;
+      const scheme = localStorage.getItem('star_controls') || 'wasd';
+      if (scheme === 'wasd') {
+        if (this.keys['KeyA']) dx = -1;
+        if (this.keys['KeyD']) dx = 1;
+        if (this.keys['KeyW']) dy = -1;
+        if (this.keys['KeyS']) dy = 1;
+      } else {
+        if (this.keys['ArrowLeft']) dx = -1;
+        if (this.keys['ArrowRight']) dx = 1;
+        if (this.keys['ArrowUp']) dy = -1;
+        if (this.keys['ArrowDown']) dy = 1;
+      }
 
       if (dx !== 0 && dy !== 0) {
         dx *= 0.7071;
@@ -769,7 +784,7 @@ class GameEngine {
 
     if (!this.bossActive) {
       // Scale spawn rates dynamically
-      let spawnRate = Math.max(1000, 2500 - (this.wave * 150));
+      let spawnRate = Math.max(1000, 2500 - (this.wave * 150)) / (this.diffFactor || 1.0);
       
       if (isBossWave) {
         if (this.enemies.length === 0 && this.waveTimer > 3000) {
@@ -1384,24 +1399,27 @@ class GameEngine {
         if (e.answerText) {
           this.ctx.save();
           // Draw neat glassmorphic answer frame above enemy
-          const panelY = -e.height/2 - 20;
-          this.ctx.fillStyle = 'rgba(15, 8, 38, 0.8)';
-          this.ctx.strokeStyle = e.isCorrectAnswer ? '#00f3ff' : 'rgba(255, 255, 255, 0.2)';
-          this.ctx.lineWidth = 1.5;
-          this.ctx.shadowBlur = e.isCorrectAnswer ? 8 : 0;
+          const panelY = -e.height/2 - 25; // Give slightly more vertical clearance
+          
+          // Set font FIRST so measurement is accurate
+          this.ctx.font = 'bold 17px Orbitron';
+          
+          this.ctx.fillStyle = 'rgba(15, 8, 38, 0.85)';
+          this.ctx.strokeStyle = e.isCorrectAnswer ? '#00f3ff' : 'rgba(255, 255, 255, 0.25)';
+          this.ctx.lineWidth = 1.8;
+          this.ctx.shadowBlur = e.isCorrectAnswer ? 10 : 0;
           this.ctx.shadowColor = '#00f3ff';
           
-          const textW = this.ctx.measureText(e.answerText).width + 16;
+          const textW = this.ctx.measureText(e.answerText).width + 20; // Extra padding
           
           this.ctx.beginPath();
-          this.ctx.roundRect(-textW/2, panelY - 10, textW, 20, 4);
+          this.ctx.roundRect(-textW/2, panelY - 14, textW, 28, 6); // Centered height 28px
           this.ctx.fill();
           this.ctx.stroke();
 
           // Answer Value Text
           this.ctx.shadowBlur = 0;
           this.ctx.fillStyle = e.isCorrectAnswer ? '#00f3ff' : '#ffffff';
-          this.ctx.font = 'bold 11px Orbitron';
           this.ctx.textAlign = 'center';
           this.ctx.textBaseline = 'middle';
           this.ctx.fillText(e.answerText, 0, panelY);
